@@ -152,7 +152,7 @@ export function mapNCAAPlayToExternal(ncaaPlay: NCAAPlay, externalGameId: string
     description: ncaaPlay.description,
     offense: ncaaPlay.offense,
     defense: ncaaPlay.defense,
-    rawData: ncaaPlay,
+    rawData: JSON.parse(JSON.stringify(ncaaPlay)),
   };
 }
 
