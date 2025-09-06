@@ -6,7 +6,8 @@ export async function GET() {
     const games = await prisma.game.findMany({
       include: {
         plays: true,
-        team: true
+        team: true,
+        season: true
       },
       orderBy: {
         date: 'desc'
