@@ -49,7 +49,7 @@ interface SearchFilters {
   teamName?: string;
   opponent?: string;
   season: string;
-  week?: string;
+  week?: number;
   conference?: string;
   rankedOnly?: boolean;
   dateRange?: { start: string; end: string };
