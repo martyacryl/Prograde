@@ -77,7 +77,7 @@ export async function POST(request: NextRequest) {
 
     // Map teams using GameMapper
     const gameMapper = new GameMapper();
-    const mappingResults = games.map(game => 
+    const mappingResults = games.map((game: any) => 
       gameMapper.mapGameToTeams({
         homeTeam: game.homeTeam,
         awayTeam: game.awayTeam,
