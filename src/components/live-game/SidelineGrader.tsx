@@ -75,7 +75,7 @@ export default function SidelineGrader({
   // Battery level monitoring
   useEffect(() => {
     if ('getBattery' in navigator) {
-      navigator.getBattery().then(battery => {
+      (navigator as any).getBattery().then((battery: any) => {
         setBatteryLevel(battery.level * 100);
         battery.addEventListener('levelchange', () => {
           setBatteryLevel(battery.level * 100);
