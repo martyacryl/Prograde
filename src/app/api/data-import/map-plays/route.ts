@@ -126,8 +126,8 @@ export async function POST(request: NextRequest) {
 /**
  * Map external play type to internal play type
  */
-function mapPlayType(externalPlayType: string): string {
-  const playTypeMap: { [key: string]: string } = {
+function mapPlayType(externalPlayType: string): 'RUSH' | 'PASS' | 'PUNT' | 'FIELD_GOAL' | 'KICKOFF' | 'EXTRA_POINT' | 'SAFETY' | 'PENALTY' | 'TIMEOUT' | 'CHALLENGE' {
+  const playTypeMap: { [key: string]: 'RUSH' | 'PASS' | 'PUNT' | 'FIELD_GOAL' | 'KICKOFF' | 'EXTRA_POINT' | 'SAFETY' | 'PENALTY' | 'TIMEOUT' | 'CHALLENGE' } = {
     'RUSH': 'RUSH',
     'PASS': 'PASS',
     'PUNT': 'PUNT',
