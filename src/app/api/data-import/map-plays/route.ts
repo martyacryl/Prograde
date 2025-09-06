@@ -63,7 +63,7 @@ export async function POST(request: NextRequest) {
             time: externalPlay.time,
             down: externalPlay.down || 1,
             distance: externalPlay.distance || 10,
-            playType: this.mapPlayType(externalPlay.playType),
+            playType: mapPlayType(externalPlay.playType),
             formation: externalPlay.formation || null,
             personnel: externalPlay.personnel || null,
             playAction: null,
