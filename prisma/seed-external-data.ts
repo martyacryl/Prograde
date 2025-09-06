@@ -21,7 +21,7 @@ async function main() {
 
     // Import test games
     for (const testGame of testGamesData) {
-      console.log(`📊 Importing ${testGame.game.description || testGame.key}...`);
+      console.log(`📊 Importing ${testGame.game.home_team} vs ${testGame.game.away_team}...`);
       
       try {
         // Create external game
