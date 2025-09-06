@@ -212,7 +212,7 @@ Optimized for sideline use during games:
 1. Connect your GitHub repository to Vercel
 2. Vercel will auto-detect Next.js and configure build settings
 3. Set environment variables in Vercel dashboard
-4. Deploy automatically on push to main branch
+4. Automatic deployments on every push to main branch
 
 #### Vercel Configuration
 - **Framework**: Next.js (auto-detected)
