@@ -469,7 +469,7 @@ model ExternalPlay {
   defense         String
   rawData         Json
   
-  mappedPlayId    String?
+  mappedPlayId    String? @unique
   mappedPlay      Play? @relation(fields: [mappedPlayId], references: [id])
   externalGame    ExternalGame @relation(fields: [externalGameId], references: [id])
   
