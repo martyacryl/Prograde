@@ -116,7 +116,7 @@ export async function POST(request: NextRequest) {
 
         // Import plays for this game if available
         if (plays.length > 0) {
-          const gamePlays = plays.filter(play => 
+          const gamePlays = plays.filter((play: any) => 
             play.externalGameId === game.externalId || 
             play.gameId === game.externalId
           );
