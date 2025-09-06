@@ -14,14 +14,22 @@ model User {
   id        String   @id @default(cuid())
   email     String   @unique
   name      String?
-  role      Role     @default(ANALYST)
+  role      Role     @default(HEAD_COACH)
   teamId    String?
-  team      Team?    @relation(fields: [teamId], references: [id])
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  team      Team?    @relation(fields: [teamId], references: [id])
   
+  // Position-specific relations
+  positionConfigurations PositionConfiguration[]
+  
+  // Grading relations
   playGrades PlayGrade[]
   reports    Report[]
+  
+  // Live game relations
+  livePlayGrades LivePlay[]
   
   @@index([teamId])
   @@index([email])
@@ -35,22 +43,30 @@ enum Role {
 }
 
 model Team {
-  id           String @id @default(cuid())
-  name         String
-  abbreviation String @unique
-  conference   String?
-  division     String?
-  level        Level  @default(COLLEGE)
-  logo         String? // URL to team logo
-  colors       Json?   // Primary and secondary colors
+  id                String   @id @default(cuid())
+  name              String
+  abbreviation      String   @unique
+  conference        String?
+  division          String?
+  level             Level
+  logo              String?
+  colors            Json?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  users             User[]
+  games             Game[]
+  opponentGames     Game[]   @relation("Opponent")
+  liveGames         LiveGame[]
+  opponentLiveGames LiveGame[] @relation("OpponentLiveGames")
+  reports           Report[]
+  tendencies        TendencyAnalysis[]
   
-  users        User[]
-  games        Game[]
-  opponents    Game[] @relation("OpponentGames")
-  playGrades   PlayGrade[]
-  reports      Report[]
-  tendencies   TendencyAnalysis[]
-  opponentTendencies TendencyAnalysis[] @relation("OpponentTendencies")
+  // Position-specific relations
+  positionConfigurations PositionConfiguration[]
+  
+  // Grading relations
+  playGrades        PlayGrade[]
   
   @@index([level, conference])
 }
@@ -88,11 +104,12 @@ model Game {
   
   season      Season   @relation(fields: [seasonId], references: [id])
   team        Team     @relation(fields: [teamId], references: [id])
-  opponent    Team     @relation("OpponentGames", fields: [opponentId], references: [id])
+  opponent    Team     @relation("Opponent", fields: [opponentId], references: [id])
   
   plays       Play[]
   playGrades  PlayGrade[]
   tendencies  TendencyAnalysis[]
+  externalGames ExternalGame[]
   
   @@unique([teamId, opponentId, date])
   @@index([seasonId, week])
@@ -107,37 +124,33 @@ enum HomeAway {
 }
 
 model Play {
-  id                String    @id @default(cuid())
-  gameId            String
-  quarter           Int
-  time              String    // "12:34"
-  down              Int
-  distance          Int
-  yardLine          Int
-  playType          PlayType
-  formation         String?
-  personnel         String?   // "11 Personnel", "12 Personnel"
-  playAction        Boolean   @default(false)
-  result            Json      // {yards: 7, touchdown: false, turnover: false, firstDown: false}
-  description       String?
+  id              String   @id @default(cuid())
+  gameId          String
+  quarter         Int
+  time            String
+  down            Int
+  distance        Int
+  playType        PlayType
+  formation       String?
+  personnel       String?
+  playAction      String?
+  result          Json
+  isRedZone       Boolean  @default(false)
+  isGoalToGo      Boolean  @default(false)
+  isThirdDown     Boolean  @default(false)
+  isFourthDown    Boolean  @default(false)
+  playersInvolved Json?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  game      Game   @relation(fields: [gameId], references: [id])
+  playGrade PlayGrade?
+  externalPlay ExternalPlay?
   
-  // Enhanced situational data
-  isRedZone         Boolean   @default(false)
-  isGoalToGo        Boolean   @default(false)
-  isThirdDown       Boolean   @default(false)
-  isFourthDown      Boolean   @default(false)
+  // Position-specific relations
+  positionPlayGrades PositionPlayGrade[]
+  positionGrades PlayPositionGrade[]
   
-  // External data mapping
-  externalPlayId    String?   // For NFL/NCAA data integration
-  externalSource    String?   // "nfl_official", "ncaa_official"
-  
-  // Player involvement (for future expansion)
-  playersInvolved   Json?     // Array of player IDs and their roles
-  
-  game              Game      @relation(fields: [gameId], references: [id])
-  playGrades        PlayGrade[]
-  
-  @@index([gameId, quarter, time])
   @@index([down, distance])
   @@index([isRedZone, isGoalToGo])
   @@index([playType])
@@ -157,43 +170,61 @@ enum PlayType {
 }
 
 model PlayGrade {
-  id            String      @id @default(cuid())
-  playId        String
-  userId        String
-  teamId        String
-  gameId        String
+  id          String   @id @default(cuid())
+  playId      String   @unique
+  teamId      String
+  gameId      String
+  userId      String
+  execution   Int?
+  technique   Int?
+  assignment  Int?
+  impact      Int?
+  blitzType   String?
+  coverage    String?
+  pressure    Boolean?
+  turnover    Boolean?
+  notes       String?
+  tags        String[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  play   Play   @relation(fields: [playId], references: [id])
+  team   Team   @relation(fields: [teamId], references: [id])
+  game   Game   @relation(fields: [gameId], references: [id])
+  user   User   @relation(fields: [userId], references: [id])
   
-  // Grading Categories (1-5 scale for better analytics)
-  execution     Int?        // 1-5 scale
-  technique     Int?        // 1-5 scale
-  assignment    Int?        // 1-5 scale
-  impact        Int?        // 1-5 scale
+  // Position-specific relations
+  positionPlayGrades PositionPlayGrade[]
+  positionGrades PlayPositionGrade[]
   
-  // Additional Analysis
-  blitzType     String?     // "A-Gap", "Corner", "Zone", "No Blitz"
-  coverage      String?     // "Cover-2", "Cover-3", "Man", "Zone"
-  pressure      Boolean?    // Was there pressure on QB?
-  turnover      Boolean?    // Did this play result in turnover?
-  
-  // Enhanced tagging system
-  tags          String[]    // ["Big Play", "Missed Assignment", "Penalty", "Incomplete"]
-  notes         String?
-  
-  // Situational context
-  situational   Json?       // {downTendency: "run", redZone: true, goalToGo: false}
-  
-  createdAt     DateTime    @default(now())
-  updatedAt     DateTime    @updatedAt
-  
-  play          Play        @relation(fields: [playId], references: [id])
-  user          User        @relation(fields: [userId], references: [id])
-  team          Team        @relation(fields: [teamId], references: [id])
-  game          Game        @relation(fields: [gameId], references: [id])
-  
-  @@unique([playId, userId])
   @@index([teamId, gameId])
   @@index([execution, technique, assignment, impact])
   @@index([blitzType, coverage])
+}
+
+model PlayPositionGrade {
+  id              String @id @default(cuid())
+  playId          String
+  playGradeId     String
+  positionGroupId String
+  specificPosition String  // "LT", "LG", "C", "RG", "RT", "TE6", "OL6", etc.
+  playerNumber    String?  // Jersey number
+  playerName      String?  // Optional player name
+  
+  // Dynamic grading data based on position configuration
+  grades          Json     // All the grade values
+  tags            String[] // Applied tags
+  notes           String?  // Position-specific notes
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  play            Play @relation(fields: [playId], references: [id])
+  playGrade       PlayGrade @relation(fields: [playGradeId], references: [id])
+  positionGroup   PositionGroup @relation(fields: [positionGroupId], references: [id])
+  
+  @@unique([playGradeId, positionGroupId, specificPosition])
+  @@index([playId, specificPosition])
 }
 
 model Formation {
@@ -241,25 +272,211 @@ enum ReportType {
 
 // New models for enhanced analytics
 model TendencyAnalysis {
-  id          String   @id @default(cuid())
-  teamId      String
-  opponentId  String?
-  gameId      String?
-  seasonId    String?
+  id                    String   @id @default(cuid())
+  teamId                String
+  gameId                String?
+  seasonId              String?
+  downDistanceTendencies Json?
+  formationTendencies   Json?
+  personnelTendencies   Json?
+  blitzTendencies       Json?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  team   Team   @relation(fields: [teamId], references: [id])
+  game   Game?  @relation(fields: [gameId], references: [id])
+  season Season? @relation(fields: [seasonId], references: [id])
+
+  @@index([teamId, gameId])
+  @@index([teamId, seasonId])
+}
+
+// Position-specific analysis models
+model PositionGroup {
+  id          String @id @default(cuid())
+  name        String @unique
+  displayName String
+  category    String
+  positions   String[]
+  isActive    Boolean @default(true)
   
-  // Tendency data
-  downDistanceTendencies Json  // {1st&10: {run: 0.6, pass: 0.4}, 3rd&long: {pass: 0.8}}
-  formationTendencies    Json  // Formation usage by situation
-  personnelTendencies    Json  // Personnel package usage
-  blitzTendencies        Json  // Blitz frequency by situation
+  configurations PositionConfiguration[]
+  playGrades     PositionPlayGrade[]
+  positionGrades PlayPositionGrade[]
+  
+  @@index([category, isActive])
+}
+
+model PositionConfiguration {
+  id              String @id @default(cuid())
+  positionGroupId String
+  teamId          String
+  userId          String
+  gradingFields   Json
+  metricFields    Json
+  tags            String[]
+  settings        Json
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  positionGroup   PositionGroup @relation(fields: [positionGroupId], references: [id])
+  team            Team @relation(fields: [teamId], references: [id])
+  user            User @relation(fields: [userId], references: [id])
+  
+  @@unique([positionGroupId, teamId])
+  @@index([teamId, positionGroupId])
+}
+
+model PositionPlayGrade {
+  id              String @id @default(cuid())
+  playId          String
+  playGradeId     String
+  positionGroupId String
+  playerNumber    String?
+  position        String
+  grades          Json
+  metrics         Json
+  notes           String?
+  tags            String[]
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  play            Play @relation(fields: [playId], references: [id])
+  playGrade       PlayGrade @relation(fields: [playGradeId], references: [id])
+  positionGroup   PositionGroup @relation(fields: [positionGroupId], references: [id])
+  
+  @@unique([playGradeId, positionGroupId, playerNumber])
+  @@index([playId, positionGroupId])
+  @@index([positionGroupId, createdAt])
+}
+
+// Live game grading models
+model LiveGame {
+  id          String @id @default(cuid())
+  teamId      String
+  opponentId  String
+  gameDate    DateTime
+  status      GameStatus @default(PRE_GAME)
+  currentQuarter Int @default(1)
+  currentTime    String @default("15:00")
+  teamScore      Int @default(0)
+  opponentScore  Int @default(0)
+  
+  // Live game settings
+  gradingMode    GradingMode @default(QUICK)
+  activeGraders  String[]  // User IDs of active graders
   
   createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
   
-  team        Team     @relation(fields: [teamId], references: [id])
-  opponent    Team?    @relation("OpponentTendencies", fields: [opponentId], references: [id])
-  game        Game?    @relation(fields: [gameId], references: [id])
-  season      Season?  @relation(fields: [seasonId], references: [id])
+  team        Team @relation(fields: [teamId], references: [id])
+  opponent    Team @relation("OpponentLiveGames", fields: [opponentId], references: [id])
+  livePlay    LivePlay[]
   
-  @@index([teamId, opponentId])
-  @@index([seasonId])
+  @@unique([teamId, gameDate])
+}
+
+enum GameStatus {
+  PRE_GAME
+  QUARTER_1
+  QUARTER_2
+  HALFTIME
+  QUARTER_3
+  QUARTER_4
+  OVERTIME
+  FINAL
+}
+
+enum GradingMode {
+  QUICK      // Fast +2 to -2 only
+  DETAILED   // Full grading fields
+  TAGS_ONLY  // Just tags and notes
+}
+
+model LivePlay {
+  id              String @id @default(cuid())
+  liveGameId      String
+  playNumber      Int
+  quarter         Int
+  time            String
+  down            Int?
+  distance        Int?
+  yardLine        Int?
+  playType        String?
+  outcome         String?
+  
+  // Quick input fields
+  isGoodPlay      Boolean?
+  isBadPlay       Boolean?
+  quickGrade      Int? // -2 to +2
+  tags            String[]
+  notes           String?
+  
+  // Grader info
+  graderId        String
+  gradedAt        DateTime @default(now())
+  
+  // Position-specific grades (JSON for flexibility)
+  positionGrades  Json?
+  
+  liveGame        LiveGame @relation(fields: [liveGameId], references: [id])
+  grader          User @relation(fields: [graderId], references: [id])
+  
+  @@unique([liveGameId, playNumber])
+  @@index([liveGameId, quarter])
+}
+
+// External data integration models
+model ExternalGame {
+  id              String @id @default(cuid())
+  externalId      String @unique
+  source          String // "kaggle_ncaa", "espn", "sports_reference", "kaggle_nfl", "snowflake_nfl"
+  season          Int
+  week            Int
+  homeTeam        String
+  awayTeam        String
+  homeScore       Int?
+  awayScore       Int?
+  date            DateTime
+  venue           String?
+  rawData         Json     // Store original data
+  
+  mappedGameId    String?
+  mappedGame      Game? @relation(fields: [mappedGameId], references: [id])
+  externalPlays   ExternalPlay[]
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  @@index([source, season, week])
+  @@index([homeTeam, awayTeam, date])
+  @@index([source, externalId])
+}
+
+model ExternalPlay {
+  id              String @id @default(cuid())
+  externalGameId  String
+  externalId      String
+  source          String
+  quarter         Int
+  time            String
+  down            Int?
+  distance        Int?
+  yardLine        Int?
+  playType        String
+  description     String
+  offense         String
+  defense         String
+  rawData         Json
+  
+  mappedPlayId    String?
+  mappedPlay      Play? @relation(fields: [mappedPlayId], references: [id])
+  externalGame    ExternalGame @relation(fields: [externalGameId], references: [id])
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  @@unique([source, externalId])
+  @@index([externalGameId, quarter, time])
+  @@index([playType, down, distance])
 }

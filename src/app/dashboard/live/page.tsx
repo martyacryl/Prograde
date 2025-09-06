@@ -133,13 +133,12 @@ export default function LiveGradingPage() {
                       </div>
                     </div>
 
-                    <Button 
-                      onClick={() => handleStartGrading(game.id || 'game-1')}
-                      className="w-full bg-red-600 hover:bg-red-700"
-                    >
-                      <Play className="h-4 w-4 mr-2" />
-                      Start Grading
-                    </Button>
+                    <Link href={`/games/${game.id}`}>
+                      <Button className="w-full bg-red-600 hover:bg-red-700">
+                        <Play className="h-4 w-4 mr-2" />
+                        Grade This Game
+                      </Button>
+                    </Link>
                   </CardContent>
                 </Card>
               ))}
@@ -151,10 +150,12 @@ export default function LiveGradingPage() {
               <p className="text-slate-600 mb-4">
                 You don't have any active games scheduled for live grading.
               </p>
-              <Button className="bg-red-600 hover:bg-red-700">
-                <Plus className="h-4 w-4 mr-2" />
-                Schedule Your First Game
-              </Button>
+              <Link href="/dashboard/data-import">
+                <Button className="bg-red-600 hover:bg-red-700">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Import Your First Game
+                </Button>
+              </Link>
             </div>
           )}
         </CardContent>

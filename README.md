@@ -5,7 +5,10 @@ A comprehensive tool for football coaches and analysts to grade plays, track ten
 ## 🏈 Features
 
 ### Core Functionality
-- **Live Play Grading**: Real-time play-by-play input during games
+- **Live Game Grading System**: Real-time play-by-play input during games with instant analytics
+- **Sideline Interface**: Tablet-optimized grading interface for sideline use
+- **Multi-User Coordination**: Multiple graders can work simultaneously with real-time sync
+- **Offline Capability**: PWA with offline storage and auto-sync when reconnected
 - **Film Study Mode**: Comprehensive analysis of recorded plays
 - **Advanced Analytics**: Tendency analysis, formation effectiveness, and situational success rates
 - **Formation Builder**: Interactive formation diagrams with drag-and-drop
@@ -13,10 +16,12 @@ A comprehensive tool for football coaches and analysts to grade plays, track ten
 - **Data Integration**: NFL and NCAA data pipeline integration
 
 ### Grading System
-- **5-Point Scale**: Execution, technique, assignment, and impact ratings
+- **Live Game Grading**: Quick +2 to -2 scale for real-time input during games
+- **Detailed Grading**: Full 5-point scale for execution, technique, assignment, and impact
 - **Situational Context**: Down/distance, red zone, goal-to-go analysis
 - **Blitz & Coverage**: Comprehensive defensive scheme identification
 - **Custom Tags**: Flexible tagging system for quick categorization
+- **Voice Notes**: Voice recording capability for hands-free operation
 - **Notes & Analysis**: Detailed play-by-play commentary
 
 ## 🛠️ Tech Stack
@@ -25,7 +30,7 @@ A comprehensive tool for football coaches and analysts to grade plays, track ten
 - **Styling**: Tailwind CSS + shadcn/ui components
 - **Database**: Neon PostgreSQL (free tier) with Prisma ORM
 - **Authentication**: NextAuth.js v5 with role-based access control
-- **Deployment**: Netlify with automated CI/CD
+- **Deployment**: Vercel with automated CI/CD
 - **Data Visualization**: Recharts and Tremor for analytics
 
 ## 🚀 Quick Start
@@ -58,6 +63,13 @@ A comprehensive tool for football coaches and analysts to grade plays, track ten
    DATABASE_URL="postgresql://username:password@host/prograde"
    NEXTAUTH_SECRET="your-secret-here"
    NEXTAUTH_URL="http://localhost:3000"
+   
+   # Data Integration APIs (Optional)
+   KAGGLE_USERNAME="your_kaggle_username"
+   KAGGLE_KEY="your_kaggle_api_key"
+   ESPN_API_KEY="your_espn_api_key"
+   SPORTS_REFERENCE_API_KEY="your_sports_reference_key"
+   NCAA_API_BASE="http://localhost:3000"  # Default NCAA API endpoint
    ```
 
 4. **Set up the database**
@@ -74,6 +86,26 @@ A comprehensive tool for football coaches and analysts to grade plays, track ten
 
 6. **Open your browser**
    Navigate to [http://localhost:3000](http://localhost:3000)
+
+### 🚀 Quick Start with Real Data
+
+1. **Start NCAA API service** (optional but recommended):
+   ```bash
+   docker run -p 3000:3000 henrygd/ncaa-api
+   ```
+
+2. **Seed with external test data**:
+   ```bash
+   npm run seed:external
+   ```
+
+3. **Access Data Import Wizard**:
+   Navigate to [http://localhost:3000/dashboard/data-import](http://localhost:3000/dashboard/data-import)
+
+4. **Import Michigan vs Ohio State 2023**:
+   - Use Game ID: `3146430`
+   - Get 150+ real plays for testing
+   - Test OL module with actual game scenarios
 
 ## 📁 Project Structure
 
@@ -137,10 +169,14 @@ Comprehensive overview with:
 
 ### Live Grading Interface
 Optimized for sideline use during games:
-- Touch-friendly controls
-- Quick data entry
-- Real-time validation
-- Offline capability
+- **Sideline Grader**: Full-screen tablet interface with high contrast mode
+- **Quick Play Input**: One-tap grading with +2 to -2 scale
+- **Touch-friendly controls**: Extra large buttons for gloved hands
+- **Voice recording**: Hands-free note taking
+- **Real-time sync**: Multiple graders can work simultaneously
+- **Offline capability**: PWA with local storage and auto-sync
+- **Battery monitoring**: Power management for extended use
+- **Stadium-ready**: High contrast mode for bright sunlight
 
 ## 🔧 Development
 
@@ -150,6 +186,13 @@ Optimized for sideline use during games:
 - `npm run start` - Start production server
 - `npm run lint` - Run ESLint
 - `npm run type-check` - Run TypeScript compiler
+
+### Data Import Scripts
+- `npm run seed:external` - Seed database with external test data
+- `npm run import:ncaa` - Import NCAA API data
+- `npm run import:sample` - Import sample games
+- `npm run validate:data` - Validate imported data quality
+- `npm run seed:with-real-data` - Full seeding with real data
 
 ### Database Management
 - `npx prisma studio` - Open Prisma Studio
@@ -165,35 +208,67 @@ Optimized for sideline use during games:
 
 ## 🚀 Deployment
 
-### Netlify (Recommended)
-1. Connect your GitHub repository to Netlify
-2. Set build command: `npm run build`
-3. Set publish directory: `.next`
-4. Configure environment variables
-5. Deploy automatically on push to main branch
+### Vercel (Recommended)
+1. Connect your GitHub repository to Vercel
+2. Vercel will auto-detect Next.js and configure build settings
+3. Set environment variables in Vercel dashboard
+4. Deploy automatically on push to main branch
+
+#### Vercel Configuration
+- **Framework**: Next.js (auto-detected)
+- **Build Command**: `npm run build`
+- **Output Directory**: `.next`
+- **Node Version**: 18.x
 
 ### Environment Variables
-Required for production:
+Required for production (set in Vercel dashboard):
 - `DATABASE_URL` - Neon PostgreSQL connection string
-- `NEXTAUTH_SECRET` - Authentication secret
-- `NEXTAUTH_URL` - Your domain URL
+- `NEXTAUTH_SECRET` - Authentication secret (generate with: `openssl rand -base64 32`)
+- `NEXTAUTH_URL` - Your Vercel domain URL
+
+#### Setting up Environment Variables in Vercel:
+1. Go to your project in Vercel dashboard
+2. Navigate to Settings → Environment Variables
+3. Add each variable for Production, Preview, and Development environments
+4. Redeploy after adding variables
 
 ## 📊 Data Integration
+
+### NCAA Data Sources (Primary)
+- **NCAA API Integration** - Real-time data from henrygd/ncaa-api
+  - Self-host: `docker run -p 3000:3000 henrygd/ncaa-api`
+  - Play-by-play: `GET /game/{gameId}/play-by-play`
+  - Scoreboard: `GET /scoreboard/football/fbs/{season}/{week}/all-conf`
+- **Test Games Available**:
+  - Michigan vs Ohio State 2023 (Game ID: 3146430)
+  - Alabama vs Georgia SEC Championship 2023
+  - CFP Semifinal games with 100+ plays each
+
+### Kaggle Datasets (Backup/Historical)
+- College Football Game Stats 2002-2025
+- College Football Statistics 2005-2013
+- CSV upload and parsing support
 
 ### NFL Data Sources
 - Snowflake Marketplace integration
 - Official NFL play-by-play data
 - Player statistics and performance metrics
 
-### NCAA Data Sources
-- ESPN API integration
-- Sports Reference data
+### ESPN & Sports Reference
+- ESPN API integration (requires API key)
+- Sports Reference data (requires API key)
 - Conference-specific statistics
 
-### Custom Data Import
-- CSV upload functionality
-- Manual data entry interface
-- Data validation and cleaning
+### Data Import Features
+- **Data Import Wizard** - User-friendly interface for all sources
+- **Game Browser Interface** - Search, filter, and select games without knowing Game IDs
+- **Team Selector** - Auto-complete team search with conference and ranking filters
+- **Quick Import Collections** - Pre-curated game collections (rivalries, playoffs, championships)
+- **Real-time Validation** - Data quality checks and mapping
+- **Team Matching** - Fuzzy string matching for team names
+- **Play Standardization** - Consistent format across sources
+- **CSV Upload** - Direct file import support
+- **Manual Entry** - Custom data input interface
 
 ## 🔐 Security Features
 
@@ -236,9 +311,13 @@ Required for production:
 - ✅ Basic analytics dashboard
 
 ### Phase 2: Data Integration (Q1 2025)
-- 🔄 NFL/NCAA data pipeline
-- 🔄 Play mapping algorithms
-- 🔄 Enhanced analytics
+- ✅ NCAA API integration (henrygd/ncaa-api)
+- ✅ Real-time play-by-play data import
+- ✅ Test games with 100+ plays each
+- ✅ Data validation and quality checks
+- ✅ Live game grading system
+- ✅ Real-time analytics engine
+- 🔄 Enhanced analytics and mapping
 
 ### Phase 3: Advanced Features (Q2 2025)
 - 📋 Team collaboration tools
@@ -268,7 +347,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - Built with [Next.js](https://nextjs.org/)
 - UI components from [shadcn/ui](https://ui.shadcn.com/)
 - Database powered by [Neon](https://neon.tech/)
-- Deployed on [Netlify](https://netlify.com/)
+- Deployed on [Vercel](https://vercel.com/)
 
 ---
 

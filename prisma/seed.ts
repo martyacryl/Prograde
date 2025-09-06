@@ -3,7 +3,7 @@ import { PrismaClient } from '@prisma/client'
 const prisma = new PrismaClient()
 
 async function main() {
-  console.log('🌱 Seeding database...')
+  console.log('🌱 Seeding database with new position-specific schema...')
 
   // Create seasons
   const season2024 = await prisma.season.upsert({
@@ -60,6 +60,115 @@ async function main() {
     },
   })
 
+  // Create position groups
+  const offensiveLine = await prisma.positionGroup.upsert({
+    where: { name: 'offensive-line' },
+    update: {},
+    create: {
+      name: 'offensive-line',
+      displayName: 'Offensive Line',
+      category: 'OFFENSE',
+      positions: ['LT', 'LG', 'C', 'RG', 'RT'],
+      isActive: true,
+    },
+  })
+
+  const quarterback = await prisma.positionGroup.upsert({
+    where: { name: 'quarterback' },
+    update: {},
+    create: {
+      name: 'quarterback',
+      displayName: 'Quarterback',
+      category: 'OFFENSE',
+      positions: ['QB'],
+      isActive: true,
+    },
+  })
+
+  const runningBack = await prisma.positionGroup.upsert({
+    where: { name: 'running-back' },
+    update: {},
+    create: {
+      name: 'running-back',
+      displayName: 'Running Back',
+      category: 'OFFENSE',
+      positions: ['RB', 'FB'],
+      isActive: true,
+    },
+  })
+
+  const wideReceivers = await prisma.positionGroup.upsert({
+    where: { name: 'wide-receivers' },
+    update: {},
+    create: {
+      name: 'wide-receivers',
+      displayName: 'Wide Receivers',
+      category: 'OFFENSE',
+      positions: ['WR1', 'WR2', 'WR3', 'WR4'],
+      isActive: true,
+    },
+  })
+
+  const defensiveLine = await prisma.positionGroup.upsert({
+    where: { name: 'defensive-line' },
+    update: {},
+    create: {
+      name: 'defensive-line',
+      displayName: 'Defensive Line',
+      category: 'DEFENSE',
+      positions: ['DE', 'DT', 'NT'],
+      isActive: true,
+    },
+  })
+
+  const linebackers = await prisma.positionGroup.upsert({
+    where: { name: 'linebackers' },
+    update: {},
+    create: {
+      name: 'linebackers',
+      displayName: 'Linebackers',
+      category: 'DEFENSE',
+      positions: ['OLB', 'ILB', 'MLB'],
+      isActive: true,
+    },
+  })
+
+  const defensiveBacks = await prisma.positionGroup.upsert({
+    where: { name: 'defensive-backs' },
+    update: {},
+    create: {
+      name: 'defensive-backs',
+      displayName: 'Defensive Backs',
+      category: 'DEFENSE',
+      positions: ['CB1', 'CB2', 'CB3', 'S1', 'S2', 'NB'],
+      isActive: true,
+    },
+  })
+
+  const specialTeams = await prisma.positionGroup.upsert({
+    where: { name: 'special-teams' },
+    update: {},
+    create: {
+      name: 'special-teams',
+      displayName: 'Special Teams',
+      category: 'SPECIAL_TEAMS',
+      positions: ['K', 'P', 'LS', 'KR', 'PR'],
+      isActive: true,
+    },
+  })
+
+  // Create a sample user
+  const sampleUser = await prisma.user.upsert({
+    where: { email: 'coach@example.com' },
+    update: {},
+    create: {
+      email: 'coach@example.com',
+      name: 'Coach Smith',
+      role: 'HEAD_COACH',
+      teamId: ohioState.id,
+    },
+  })
+
   // Create games
   const game1 = await prisma.game.upsert({
     where: { id: 'game-1' },
@@ -95,70 +204,160 @@ async function main() {
     },
   })
 
-  // Create formations
-  const iFormation = await prisma.formation.upsert({
-    where: { name: 'I-Formation' },
+  // Create sample plays
+  const play1 = await prisma.play.upsert({
+    where: { id: 'play-1' },
     update: {},
     create: {
-      name: 'I-Formation',
-      category: 'Pro Style',
+      id: 'play-1',
+      gameId: game1.id,
+      quarter: 1,
+      time: '14:30',
+      down: 1,
+      distance: 10,
+      playType: 'RUSH',
+      formation: 'I-Formation',
       personnel: '21',
-      description: 'Traditional I-Formation with fullback and tailback',
-      isOffensive: true,
-      diagram: {
-        positions: {
-          QB: { x: 50, y: 40 },
-          RB: { x: 50, y: 60 },
-          FB: { x: 50, y: 55 },
-          LT: { x: 35, y: 30 },
-          LG: { x: 40, y: 30 },
-          C: { x: 50, y: 30 },
-          RG: { x: 60, y: 30 },
-          RT: { x: 65, y: 30 },
-          TE: { x: 70, y: 30 },
-          WR1: { x: 25, y: 20 },
-          WR2: { x: 75, y: 20 }
-        }
-      }
+      playAction: 'Inside Zone',
+      result: { yards: 4, firstDown: false, touchdown: false },
+      isRedZone: false,
+      isGoalToGo: false,
+      isThirdDown: false,
+      isFourthDown: false,
     },
   })
 
-  const shotgun = await prisma.formation.upsert({
-    where: { name: 'Shotgun' },
+  const play2 = await prisma.play.upsert({
+    where: { id: 'play-2' },
     update: {},
     create: {
-      name: 'Shotgun',
-      category: 'Spread',
+      id: 'play-2',
+      gameId: game1.id,
+      quarter: 1,
+      time: '13:45',
+      down: 2,
+      distance: 6,
+      playType: 'PASS',
+      formation: 'Shotgun',
       personnel: '11',
-      description: 'Shotgun formation with single back',
-      isOffensive: true,
-      diagram: {
-        positions: {
-          QB: { x: 50, y: 45 },
-          RB: { x: 50, y: 55 },
-          LT: { x: 35, y: 30 },
-          LG: { x: 40, y: 30 },
-          C: { x: 50, y: 30 },
-          RG: { x: 60, y: 30 },
-          RT: { x: 65, y: 30 },
-          TE: { x: 70, y: 30 },
-          WR1: { x: 25, y: 20 },
-          WR2: { x: 75, y: 20 },
-          WR3: { x: 50, y: 15 }
-        }
-      }
+      playAction: 'Quick Slant',
+      result: { yards: 8, firstDown: true, touchdown: false },
+      isRedZone: false,
+      isGoalToGo: false,
+      isThirdDown: false,
+      isFourthDown: false,
     },
   })
 
-  console.log('✅ Database seeded successfully!')
+  // Create sample play grades
+  const playGrade1 = await prisma.playGrade.upsert({
+    where: { id: 'pg-1' },
+    update: {},
+    create: {
+      id: 'pg-1',
+      playId: play1.id,
+      teamId: ohioState.id,
+      gameId: game1.id,
+      userId: sampleUser.id,
+      execution: 3,
+      technique: 4,
+      assignment: 5,
+      impact: 3,
+      notes: 'Good blocking execution, RB found the hole',
+      tags: ['Good Blocking', 'Inside Zone'],
+    },
+  })
+
+  const playGrade2 = await prisma.playGrade.upsert({
+    where: { id: 'pg-2' },
+    update: {},
+    create: {
+      id: 'pg-2',
+      playId: play2.id,
+      teamId: ohioState.id,
+      gameId: game1.id,
+      userId: sampleUser.id,
+      execution: 4,
+      technique: 4,
+      assignment: 5,
+      impact: 4,
+      notes: 'Excellent protection, QB had time to throw',
+      tags: ['Great Protection', 'Quick Release'],
+    },
+  })
+
+  // Create sample position play grades for Offensive Line
+  const olPlayGrade1 = await prisma.positionPlayGrade.upsert({
+    where: { id: 'olpg-1' },
+    update: {},
+    create: {
+      id: 'olpg-1',
+      playId: play1.id,
+      playGradeId: playGrade1.id,
+      positionGroupId: offensiveLine.id,
+      playerNumber: '74',
+      position: 'LT',
+      grades: {
+        passProtection: 0,
+        runBlocking: 1,
+        technique: 1,
+        communication: 1
+      },
+      metrics: {
+        pressuresAllowed: 0,
+        knockdownBlocks: 1
+      },
+      notes: 'Good seal block on the edge',
+      tags: ['Dominant Block', 'Great Communication'],
+    },
+  })
+
+  const olPlayGrade2 = await prisma.positionPlayGrade.upsert({
+    where: { id: 'olpg-2' },
+    update: {},
+    create: {
+      id: 'olpg-2',
+      playId: play1.id,
+      playGradeId: playGrade1.id,
+      positionGroupId: offensiveLine.id,
+      playerNumber: '65',
+      position: 'LG',
+      grades: {
+        passProtection: 0,
+        runBlocking: 2,
+        technique: 1,
+        communication: 1
+      },
+      metrics: {
+        pressuresAllowed: 0,
+        knockdownBlocks: 1
+      },
+      notes: 'Excellent pull and lead block',
+      tags: ['Dominant Block', 'Pancake Block'],
+    },
+  })
+
+  console.log('✅ Database seeded successfully with new position-specific schema!')
   console.log(`   - ${season2024.year} season created`)
   console.log(`   - ${ohioState.name} team created`)
   console.log(`   - ${michigan.name} team created`)
   console.log(`   - ${kansasCity.name} team created`)
+  console.log(`   - ${offensiveLine.displayName} position group created`)
+  console.log(`   - ${quarterback.displayName} position group created`)
+  console.log(`   - ${runningBack.displayName} position group created`)
+  console.log(`   - ${wideReceivers.displayName} position group created`)
+  console.log(`   - ${defensiveLine.displayName} position group created`)
+  console.log(`   - ${linebackers.displayName} position group created`)
+  console.log(`   - ${defensiveBacks.displayName} position group created`)
+  console.log(`   - ${specialTeams.displayName} position group created`)
   console.log(`   - ${game1.id} game created`)
   console.log(`   - ${game2.id} game created`)
-  console.log(`   - ${iFormation.name} formation created`)
-  console.log(`   - ${shotgun.name} formation created`)
+  console.log(`   - ${play1.id} play created`)
+  console.log(`   - ${play2.id} play created`)
+  console.log(`   - ${playGrade1.id} play grade created`)
+  console.log(`   - ${playGrade2.id} play grade created`)
+  console.log(`   - ${olPlayGrade1.id} OL position play grade created`)
+  console.log(`   - ${olPlayGrade2.id} OL position play grade created`)
 }
 
 main()
