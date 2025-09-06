@@ -25,11 +25,16 @@ import SidelineGrader from '@/components/live-game/SidelineGrader';
 import LiveAnalytics from '@/components/live-game/LiveAnalytics';
 
 interface LiveGamePageProps {
-  params: { gameId: string };
+  params: Promise<{ gameId: string }>;
 }
 
 export default function LiveGamePage({ params }: LiveGamePageProps) {
-  const { gameId } = params;
+  const [gameId, setGameId] = useState<string>('');
+  
+  useEffect(() => {
+    params.then(({ gameId }) => setGameId(gameId));
+  }, [params]);
+  
   const [activeView, setActiveView] = useState<'dashboard' | 'grading' | 'sideline' | 'analytics'>('dashboard');
   const [isRecording, setIsRecording] = useState(false);
   const [userRole, setUserRole] = useState<'HEAD_COACH' | 'COORDINATOR' | 'ANALYST'>('ANALYST');
@@ -72,6 +77,20 @@ export default function LiveGamePage({ params }: LiveGamePageProps) {
     setIsRecording(!isRecording);
     // Here you would implement actual voice recording logic
   };
+
+  if (!gameId) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <Play className="h-8 w-8 text-blue-600" />
+          </div>
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">Loading Game</h2>
+          <p className="text-gray-600">Please wait while we load the game data...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
