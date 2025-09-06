@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
         teamId: 'default-team-id', // TODO: Map to actual team
         opponentId: 'opponent-team-id', // TODO: Map to actual opponent
         homeAway: 'HOME', // TODO: Determine home/away
-        score: null // Will be filled later if available
+        // score will be filled later if available
       }
     });
 
