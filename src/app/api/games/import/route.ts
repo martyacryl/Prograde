@@ -7,11 +7,28 @@ export async function POST(request: NextRequest) {
     const { externalGameId, homeTeam, awayTeam, date, plays, source } = body;
 
     // Create the game record
+    // Get or create season
+    const year = new Date(date).getFullYear();
+    let season = await prisma.season.findUnique({
+      where: { year }
+    });
+    
+    if (!season) {
+      season = await prisma.season.create({
+        data: {
+          year,
+          isActive: true,
+          startDate: new Date(year, 0, 1), // January 1st
+          endDate: new Date(year, 11, 31), // December 31st
+        }
+      });
+    }
+
     const game = await prisma.game.create({
       data: {
         date: new Date(date),
         week: Math.ceil(new Date(date).getDate() / 7), // Simple week calculation
-        season: new Date(date).getFullYear(),
+        seasonId: season.id,
         teamId: 'default-team-id', // TODO: Map to actual team
         opponentId: 'opponent-team-id', // TODO: Map to actual opponent
         homeAway: 'HOME', // TODO: Determine home/away
