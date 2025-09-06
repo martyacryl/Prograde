@@ -134,7 +134,7 @@ export function mapNCAAGameToExternal(ncaaGame: NCAAGame) {
     awayScore: ncaaGame.away_score,
     date: new Date(ncaaGame.date),
     venue: ncaaGame.venue,
-    rawData: ncaaGame,
+    rawData: JSON.parse(JSON.stringify(ncaaGame)),
   };
 }
 
