@@ -64,8 +64,6 @@ export async function POST(request: NextRequest) {
             down: externalPlay.down || 1,
             distance: externalPlay.distance || 10,
             playType: mapPlayType(externalPlay.playType),
-            formation: externalPlay.formation || null,
-            personnel: externalPlay.personnel || null,
             playAction: null,
             result: {
               yards: 0,
