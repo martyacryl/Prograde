@@ -4,7 +4,7 @@ import React from 'react';
 import { cn } from '@/lib/utils';
 
 interface GradeButtonProps {
-  grade: number;
+  grade: '2' | '1' | '0' | '-1' | '-2';
   onClick: () => void;
   isSelected?: boolean;
   disabled?: boolean;
@@ -79,7 +79,7 @@ export default function GradeButton({
   className,
   children
 }: GradeButtonProps) {
-  const config = GRADE_CONFIG[grade as keyof typeof GRADE_CONFIG];
+  const config = GRADE_CONFIG[grade];
   const sizeClasses = SIZE_CONFIG[size];
   
   if (!config) {
