@@ -146,14 +146,14 @@ export function QuickGradeRow({
   showLabels = false,
   className
 }: QuickGradeRowProps) {
-  const grades = [2, 1, 0, -1, -2];
+  const grades = [2, 1, 0, -1, -2] as const;
 
   return (
     <div className={cn('flex items-center justify-center space-x-4', className)}>
       {grades.map((grade) => (
         <div key={grade} className="flex flex-col items-center space-y-2">
           <GradeButton
-            grade={grade}
+            grade={String(grade) as '2' | '1' | '0' | '-1' | '-2'}
             onClick={() => onGradeSelect(grade)}
             isSelected={selectedGrade === grade}
             disabled={disabled}
@@ -162,7 +162,7 @@ export function QuickGradeRow({
           />
           {showLabels && (
             <span className="text-xs font-medium text-gray-600 text-center">
-              {GRADE_CONFIG[grade as keyof typeof GRADE_CONFIG]?.description}
+              {GRADE_CONFIG[String(grade) as keyof typeof GRADE_CONFIG]?.description}
             </span>
           )}
         </div>
@@ -178,14 +178,14 @@ export function CompactGradeRow({
   disabled = false,
   className
 }: Omit<QuickGradeRowProps, 'size' | 'variant' | 'showLabels'>) {
-  const grades = [2, 1, 0, -1, -2];
+  const grades = [2, 1, 0, -1, -2] as const;
 
   return (
     <div className={cn('flex items-center justify-center space-x-2', className)}>
       {grades.map((grade) => (
         <GradeButton
           key={grade}
-          grade={grade}
+          grade={String(grade) as '2' | '1' | '0' | '-1' | '-2'}
           onClick={() => onGradeSelect(grade)}
           isSelected={selectedGrade === grade}
           disabled={disabled}
@@ -204,14 +204,14 @@ export function TouchGradeButtons({
   disabled = false,
   className
 }: Omit<QuickGradeRowProps, 'size' | 'variant' | 'showLabels'>) {
-  const grades = [2, 1, 0, -1, -2];
+  const grades = [2, 1, 0, -1, -2] as const;
 
   return (
     <div className={cn('grid grid-cols-5 gap-3 w-full max-w-md mx-auto', className)}>
       {grades.map((grade) => (
         <GradeButton
           key={grade}
-          grade={grade}
+          grade={String(grade) as '2' | '1' | '0' | '-1' | '-2'}
           onClick={() => onGradeSelect(grade)}
           isSelected={selectedGrade === grade}
           disabled={disabled}
