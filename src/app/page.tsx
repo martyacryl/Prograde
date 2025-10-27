@@ -33,14 +33,14 @@ export default function HomePage() {
               Grade plays, track tendencies, and generate actionable insights.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link href="/dashboard">
+              <Link href="/signup">
                 <Button size="lg" className="bg-red-600 hover:bg-red-700 text-white px-8 py-3">
                   Get Started
                 </Button>
               </Link>
-              <Link href="/demo">
+              <Link href="/login">
                 <Button size="lg" variant="outline" className="border-white text-white hover:bg-white hover:text-slate-900 px-8 py-3">
-                  Watch Demo
+                  Sign In
                 </Button>
               </Link>
             </div>
@@ -171,14 +171,14 @@ export default function HomePage() {
             Join hundreds of coaches who are already using ProGrade to gain a competitive edge.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link href="/dashboard">
+            <Link href="/signup">
               <Button size="lg" className="bg-red-600 hover:bg-red-700 text-white px-8 py-3">
                 Start Free Trial
               </Button>
             </Link>
-            <Link href="/contact">
+            <Link href="/login">
               <Button size="lg" variant="outline" className="border-white text-white hover:bg-white hover:text-slate-900 px-8 py-3">
-                Contact Sales
+                Sign In
               </Button>
             </Link>
           </div>

@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { useAuthStore } from '@/stores/authStore';
 import { 
   PlayIcon, 
   ArrowDownTrayIcon, 
@@ -152,6 +153,8 @@ const ActivityItem: React.FC<ActivityItemProps> = ({ type, title, description, t
 };
 
 export default function DashboardPage() {
+  const { user } = useAuthStore();
+
   const stats = [
     {
       title: "Total Games",
@@ -275,11 +278,16 @@ export default function DashboardPage() {
       {/* Welcome Header */}
       <div className="text-center space-y-4">
         <h1 className="text-4xl font-bold text-gray-900 tracking-tight">
-          Welcome back, Coach Smith
+          Welcome back, {user?.name || 'Coach'}
         </h1>
         <p className="text-xl text-gray-600 max-w-2xl mx-auto">
           Ready to analyze today's performance? Here's what's happening with your team.
         </p>
+        {user?.team && (
+          <Badge variant="secondary" className="mt-2">
+            {user.team.name}
+          </Badge>
+        )}
       </div>
 
       {/* Stats Overview */}

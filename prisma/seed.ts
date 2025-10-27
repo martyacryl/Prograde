@@ -1,4 +1,5 @@
 import { PrismaClient } from '@prisma/client'
+import { hashPassword } from '../src/lib/auth-utils'
 
 const prisma = new PrismaClient()
 
@@ -157,15 +158,47 @@ async function main() {
     },
   })
 
-  // Create a sample user
+  // Hash passwords for test users
+  const testPassword = await hashPassword('password123')
+  
+  // Create test users with hashed passwords
   const sampleUser = await prisma.user.upsert({
     where: { email: 'coach@example.com' },
-    update: {},
+    update: { password: testPassword, isActive: true },
     create: {
       email: 'coach@example.com',
       name: 'Coach Smith',
+      password: testPassword,
       role: 'HEAD_COACH',
       teamId: ohioState.id,
+      isActive: true,
+    },
+  })
+
+  // Create additional test users
+  const testUser2 = await prisma.user.upsert({
+    where: { email: 'coordinator@example.com' },
+    update: { password: testPassword, isActive: true },
+    create: {
+      email: 'coordinator@example.com',
+      name: 'Coach Coordinator',
+      password: testPassword,
+      role: 'COORDINATOR',
+      teamId: michigan.id,
+      isActive: true,
+    },
+  })
+
+  const testUser3 = await prisma.user.upsert({
+    where: { email: 'analyst@example.com' },
+    update: { password: testPassword, isActive: true },
+    create: {
+      email: 'analyst@example.com',
+      name: 'Coach Analyst',
+      password: testPassword,
+      role: 'ANALYST',
+      teamId: ohioState.id,
+      isActive: true,
     },
   })
 
@@ -358,6 +391,10 @@ async function main() {
   console.log(`   - ${playGrade2.id} play grade created`)
   console.log(`   - ${olPlayGrade1.id} OL position play grade created`)
   console.log(`   - ${olPlayGrade2.id} OL position play grade created`)
+  console.log(`\n📋 Test Users Created (password: password123):`)
+  console.log(`   - coach@example.com (HEAD_COACH)`)
+  console.log(`   - coordinator@example.com (COORDINATOR)`)
+  console.log(`   - analyst@example.com (ANALYST)`)
 }
 
 main()

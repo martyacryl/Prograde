@@ -1,8 +1,10 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { useAuthStore } from '@/stores/authStore'
 import { 
   Bell, 
   Search, 
@@ -23,6 +25,13 @@ import { Badge } from '@/components/ui/badge'
 
 export function Header() {
   const [notifications] = useState(3)
+  const router = useRouter()
+  const { user, logout } = useAuthStore()
+
+  const handleLogout = () => {
+    logout()
+    router.push('/login')
+  }
 
   return (
     <header className="bg-white border-b border-slate-200 px-6 py-4">
@@ -69,12 +78,17 @@ export function Header() {
                 <div className="h-8 w-8 bg-red-600 rounded-full flex items-center justify-center">
                   <User className="h-4 w-4 text-white" />
                 </div>
-                <span className="text-slate-700">Coach Smith</span>
+                <span className="text-slate-700">{user?.name || 'User'}</span>
                 <ChevronDown className="h-4 w-4 text-slate-500" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent className="w-56" align="end">
-              <DropdownMenuLabel>My Account</DropdownMenuLabel>
+              <DropdownMenuLabel>
+                <div className="flex flex-col">
+                  <span>{user?.name}</span>
+                  <span className="text-xs text-slate-500">{user?.email}</span>
+                </div>
+              </DropdownMenuLabel>
               <DropdownMenuSeparator />
               <DropdownMenuItem>
                 <User className="mr-2 h-4 w-4" />
@@ -85,7 +99,7 @@ export function Header() {
                 Settings
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem>
+              <DropdownMenuItem onClick={handleLogout}>
                 <LogOut className="mr-2 h-4 w-4" />
                 Sign out
               </DropdownMenuItem>

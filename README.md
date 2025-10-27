@@ -29,7 +29,8 @@ A comprehensive tool for football coaches and analysts to grade plays, track ten
 - **Framework**: Next.js 14 with TypeScript
 - **Styling**: Tailwind CSS + shadcn/ui components
 - **Database**: Neon PostgreSQL (free tier) with Prisma ORM
-- **Authentication**: NextAuth.js v5 with role-based access control
+- **Authentication**: JWT-based authentication with bcryptjs password hashing
+- **State Management**: Zustand with localStorage persistence
 - **Deployment**: Vercel with automated CI/CD
 - **Data Visualization**: Recharts and Tremor for analytics
 
@@ -55,13 +56,13 @@ A comprehensive tool for football coaches and analysts to grade plays, track ten
 
 3. **Set up environment variables**
    ```bash
-   cp .env.example .env.local
+   cp env.example.txt .env.local
    ```
    
    Update `.env.local` with your database credentials:
    ```env
    DATABASE_URL="postgresql://username:password@host/prograde"
-   NEXTAUTH_SECRET="your-secret-here"
+   JWT_SECRET="generate-with-openssl-rand-base64-32"
    NEXTAUTH_URL="http://localhost:3000"
    
    # Data Integration APIs (Optional)
@@ -71,6 +72,11 @@ A comprehensive tool for football coaches and analysts to grade plays, track ten
    SPORTS_REFERENCE_API_KEY="your_sports_reference_key"
    NCAA_API_BASE="http://localhost:3000"  # Default NCAA API endpoint
    ```
+   
+   **Note**: Generate a secure JWT secret with:
+   ```bash
+   openssl rand -base64 32
+   ```
 
 4. **Set up the database**
    ```bash
@@ -78,6 +84,11 @@ A comprehensive tool for football coaches and analysts to grade plays, track ten
    npx prisma db push
    npx prisma db seed
    ```
+   
+   This will create test users with credentials:
+   - `coach@example.com` / `password123` (HEAD_COACH)
+   - `coordinator@example.com` / `password123` (COORDINATOR)
+   - `analyst@example.com` / `password123` (ANALYST)
 
 5. **Run the development server**
    ```bash
@@ -272,12 +283,41 @@ Required for production (set in Vercel dashboard):
 
 ## 🔐 Security Features
 
-- Role-based access control (RBAC)
-- Team data isolation
-- Input validation with Zod schemas
-- SQL injection prevention (Prisma ORM)
-- XSS protection with CSP headers
-- Rate limiting on API endpoints
+- **JWT-based Authentication**: Secure token-based authentication with 7-day expiration
+- **Password Hashing**: bcryptjs password hashing (10 rounds)
+- **Role-based access control (RBAC)**: HEAD_COACH, COORDINATOR, ANALYST, SCOUT roles
+- **Team data isolation**: Multi-tenant data isolation by teamId
+- **Input validation**: Zod schemas for all user inputs
+- **SQL injection prevention**: Prisma ORM with parameterized queries
+- **XSS protection**: Input sanitization and CSP headers
+- **Rate limiting**: Protection against brute force attacks on auth endpoints
+- **HTTPS ready**: Secure cookies and tokens for production
+
+## 🔑 Authentication
+
+ProGrade uses JWT-based authentication with secure password hashing:
+
+### Features
+- Email/password authentication
+- Persistent sessions with localStorage
+- Role-based authorization (HEAD_COACH, COORDINATOR, ANALYST, SCOUT)
+- Team-based multi-tenant isolation
+- Protected API routes with middleware
+- Auto-logout on token expiration
+
+### Test Users
+After running `npx prisma db seed`, you can log in with:
+- **coach@example.com** / password123 (HEAD_COACH)
+- **coordinator@example.com** / password123 (COORDINATOR)
+- **analyst@example.com** / password123 (ANALYST)
+
+### API Endpoints
+- `POST /api/auth/login` - User login
+- `POST /api/auth/signup` - User registration
+- `GET /api/auth/verify` - Token verification
+- `POST /api/auth/logout` - User logout
+
+For detailed implementation, see [AUTH_SYSTEM_COMPLETE_GUIDE.md](./AUTH_SYSTEM_COMPLETE_GUIDE.md)
 
 ## 📱 Mobile Optimization
 
