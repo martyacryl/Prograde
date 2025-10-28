@@ -42,6 +42,7 @@ interface PositionConfiguration {
     min: number;
     max: number;
     weight: number;
+    description?: string;
   }>;
   metricFields: Record<string, any>;
   tags: string[];
