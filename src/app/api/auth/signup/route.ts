@@ -74,8 +74,8 @@ export async function POST(request: NextRequest) {
     const hashedPassword = await hashPassword(sanitizedPassword)
     
     // Create user and team in transaction
+    let teamId = null
     const result = await prisma.$transaction(async (tx) => {
-      let teamId = null
       
       // Create team if teamData is provided
       if (teamData) {
@@ -121,11 +121,11 @@ export async function POST(request: NextRequest) {
         include: { team: true }
       })
       
-          return user
-        })
+      return user
+    })
 
-        // Initialize team setup with default position configurations
-        if (teamId) {
+    // Initialize team setup with default position configurations
+    if (teamId) {
           try {
             const setupResponse = await fetch(`${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/team-setup/initialize`, {
               method: 'POST',
