@@ -74,7 +74,7 @@ export async function POST(request: NextRequest) {
     const hashedPassword = await hashPassword(sanitizedPassword)
     
     // Create user and team in transaction
-    let teamId = null
+    let teamId: string | null = null
     const result = await prisma.$transaction(async (tx) => {
       
       // Create team if teamData is provided
