@@ -45,6 +45,54 @@ enum Role {
   SCOUT
 }
 
+model Player {
+  id          String   @id @default(cuid())
+  teamId      String
+  seasonId    String
+  jerseyNumber String
+  firstName   String
+  lastName    String
+  position    String   // "LT", "LG", "C", "RG", "RT", "QB", "RB", etc.
+  year        String?  // "FR", "SO", "JR", "SR", "GR"
+  height      String?  // "6'4\""
+  weight      Int?     // Weight in pounds
+  hometown    String?  // "Detroit, MI"
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  team        Team     @relation(fields: [teamId], references: [id])
+  season      Season   @relation(fields: [seasonId], references: [id])
+  
+  // Grading relations
+  playGrades  PlayPositionGrade[]
+  gameRosters GameRoster[]
+  
+  @@unique([teamId, seasonId, jerseyNumber])
+  @@index([teamId, seasonId, position])
+  @@index([teamId, seasonId, isActive])
+  @@index([seasonId])
+}
+
+model GameRoster {
+  id          String   @id @default(cuid())
+  gameId      String
+  teamId      String
+  playerId    String
+  position    String   // Starting position for this game
+  isStarter   Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  game        Game     @relation(fields: [gameId], references: [id])
+  team        Team     @relation(fields: [teamId], references: [id])
+  player      Player   @relation(fields: [playerId], references: [id])
+  
+  @@unique([gameId, playerId])
+  @@index([gameId, teamId])
+  @@index([gameId, position])
+}
+
 model Team {
   id                String   @id @default(cuid())
   name              String
@@ -58,8 +106,10 @@ model Team {
   updatedAt         DateTime @updatedAt
 
   users             User[]
+  players           Player[]
   games             Game[]
   opponentGames     Game[]   @relation("Opponent")
+  gameRosters       GameRoster[]
   liveGames         LiveGame[]
   opponentLiveGames LiveGame[] @relation("OpponentLiveGames")
   reports           Report[]
@@ -88,6 +138,7 @@ model Season {
   endDate     DateTime?
   
   games       Game[]
+  players     Player[]
   tendencies  TendencyAnalysis[]
   
   @@index([year, isActive])
@@ -111,6 +162,7 @@ model Game {
   
   plays       Play[]
   playGrades  PlayGrade[]
+  gameRosters GameRoster[]
   tendencies  TendencyAnalysis[]
   externalGames ExternalGame[]
   
@@ -211,8 +263,9 @@ model PlayPositionGrade {
   playGradeId     String
   positionGroupId String
   specificPosition String  // "LT", "LG", "C", "RG", "RT", "TE6", "OL6", etc.
-  playerNumber    String?  // Jersey number
-  playerName      String?  // Optional player name
+  playerId        String?  // Reference to Player
+  playerNumber    String?  // Jersey number (for backup/fallback)
+  playerName      String?  // Optional player name (for backup/fallback)
   
   // Dynamic grading data based on position configuration
   grades          Json     // All the grade values
@@ -225,9 +278,11 @@ model PlayPositionGrade {
   play            Play @relation(fields: [playId], references: [id])
   playGrade       PlayGrade @relation(fields: [playGradeId], references: [id])
   positionGroup   PositionGroup @relation(fields: [positionGroupId], references: [id])
+  player          Player? @relation(fields: [playerId], references: [id])
   
   @@unique([playGradeId, positionGroupId, specificPosition])
   @@index([playId, specificPosition])
+  @@index([playerId])
 }
 
 model Formation {

@@ -9,7 +9,9 @@ export async function POST(request: NextRequest) {
       playGradeId,
       positionGroupId,
       position,
+      playerId,
       playerNumber,
+      playerName,
       grades,
       metrics,
       notes,
@@ -24,17 +26,19 @@ export async function POST(request: NextRequest) {
     }
 
     // Create or update position play grade
-    const positionPlayGrade = await prisma.positionPlayGrade.upsert({
+    const positionPlayGrade = await prisma.playPositionGrade.upsert({
       where: {
-        playGradeId_positionGroupId_playerNumber: {
+        playGradeId_positionGroupId_specificPosition: {
           playGradeId,
           positionGroupId,
-          playerNumber: playerNumber || ''
+          specificPosition: position
         }
       },
       update: {
+        playerId,
+        playerNumber,
+        playerName,
         grades,
-        metrics: metrics || {},
         notes,
         tags: tags || [],
         updatedAt: new Date()
@@ -43,12 +47,26 @@ export async function POST(request: NextRequest) {
         playId,
         playGradeId,
         positionGroupId,
-        position,
+        specificPosition: position,
+        playerId,
         playerNumber,
+        playerName,
         grades,
-        metrics: metrics || {},
-        notes,
-        tags: tags || []
+        tags: tags || [],
+        notes
+      },
+      include: {
+        player: {
+          include: {
+            team: {
+              select: {
+                id: true,
+                name: true,
+                abbreviation: true
+              }
+            }
+          }
+        }
       }
     });
 
@@ -80,14 +98,25 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const grades = await prisma.positionPlayGrade.findMany({
+    const grades = await prisma.playPositionGrade.findMany({
       where: {
         playId,
         playGradeId,
         positionGroupId
       },
       include: {
-        positionGroup: true
+        positionGroup: true,
+        player: {
+          include: {
+            team: {
+              select: {
+                id: true,
+                name: true,
+                abbreviation: true
+              }
+            }
+          }
+        }
       }
     });
 

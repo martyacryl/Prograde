@@ -3,26 +3,26 @@ import { prisma } from '@/lib/db';
 
 export async function GET() {
   try {
-    const games = await prisma.game.findMany({
-      include: {
-        plays: {
-          include: {
-            playGrade: true,
-            positionPlayGrades: true
-          }
-        },
-        team: true,
-        opponent: true,
-        season: true
-      },
-      orderBy: {
-        date: 'desc'
-      }
-    });
+            const games = await prisma.game.findMany({
+              include: {
+                plays: {
+                  include: {
+                    playGrade: true,
+                    positionGrades: true
+                  }
+                },
+                team: true,
+                opponent: true,
+                season: true
+              },
+              orderBy: {
+                date: 'desc'
+              }
+            });
 
     const formattedGames = games.map(game => {
       const totalPlays = game.plays.length;
-      const gradedPlays = game.plays.filter(play => play.playGrade || play.positionPlayGrades.length > 0).length;
+      const gradedPlays = game.plays.filter(play => play.playGrade || play.positionGrades.length > 0).length;
       
       return {
         id: game.id,

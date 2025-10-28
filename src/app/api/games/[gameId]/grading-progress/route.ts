@@ -9,19 +9,19 @@ export async function GET(
     const { gameId } = await params;
 
     // Get all plays for this game with their grades
-    const plays = await prisma.play.findMany({
-      where: {
-        gameId: gameId
-      },
-      include: {
-        playGrade: true,
-        positionPlayGrades: {
-          include: {
-            positionGroup: true
-          }
-        }
-      }
-    });
+            const plays = await prisma.play.findMany({
+              where: {
+                gameId: gameId
+              },
+              include: {
+                playGrade: true,
+                positionGrades: {
+                  include: {
+                    positionGroup: true
+                  }
+                }
+              }
+            });
 
     // Calculate grading progress per position group
     const progress: Record<string, number> = {};
@@ -45,8 +45,8 @@ export async function GET(
 
     // Count graded plays per position group
     plays.forEach(play => {
-      if (play.positionPlayGrades.length > 0) {
-        play.positionPlayGrades.forEach(positionGrade => {
+      if (play.positionGrades.length > 0) {
+        play.positionGrades.forEach(positionGrade => {
           const positionGroup = positionGrade.positionGroup?.id;
           if (positionGroup && positionGroups.includes(positionGroup)) {
             progress[positionGroup]++;

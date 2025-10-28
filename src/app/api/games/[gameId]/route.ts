@@ -8,30 +8,30 @@ export async function GET(
   try {
     const { gameId } = await params;
 
-    const game = await prisma.game.findUnique({
-      where: {
-        id: gameId
-      },
-      include: {
-        plays: {
-          include: {
-            playGrade: true,
-            positionPlayGrades: {
+            const game = await prisma.game.findUnique({
+              where: {
+                id: gameId
+              },
               include: {
-                positionGroup: true
+                plays: {
+                  include: {
+                    playGrade: true,
+                    positionGrades: {
+                      include: {
+                        positionGroup: true
+                      }
+                    }
+                  },
+                  orderBy: {
+                    quarter: 'asc',
+                    time: 'asc'
+                  }
+                },
+                team: true,
+                opponent: true,
+                season: true
               }
-            }
-          },
-          orderBy: {
-            quarter: 'asc',
-            time: 'asc'
-          }
-        },
-        team: true,
-        opponent: true,
-        season: true
-      }
-    });
+            });
 
     if (!game) {
       return NextResponse.json(
@@ -42,7 +42,7 @@ export async function GET(
 
     const totalPlays = game.plays.length;
     const gradedPlays = game.plays.filter(play => 
-      play.playGrade || play.positionPlayGrades.length > 0
+      play.playGrade || play.positionGrades.length > 0
     ).length;
 
     const formattedGame = {
@@ -73,9 +73,9 @@ export async function GET(
         isThirdDown: play.isThirdDown,
         isFourthDown: play.isFourthDown,
         playersInvolved: play.playersInvolved,
-        hasGrade: !!(play.playGrade || play.positionPlayGrades.length > 0),
+        hasGrade: !!(play.playGrade || play.positionGrades.length > 0),
         playGrade: play.playGrade,
-        positionGrades: play.positionPlayGrades
+        positionGrades: play.positionGrades
       }))
     };
 
