@@ -23,9 +23,16 @@ interface AuthState {
   error: string | null
 }
 
+interface TeamData {
+  name: string
+  abbreviation: string
+  level: string
+  conference?: string
+}
+
 interface AuthActions {
   login: (email: string, password: string) => Promise<boolean>
-  signup: (name: string, email: string, password: string) => Promise<boolean>
+  signup: (name: string, email: string, password: string, teamData?: TeamData) => Promise<boolean>
   logout: () => void
   clearError: () => void
   setLoading: (loading: boolean) => void
@@ -91,7 +98,7 @@ export const useAuthStore = create<AuthStore>()(
         }
       },
 
-      signup: async (name: string, email: string, password: string) => {
+      signup: async (name: string, email: string, password: string, teamData?: TeamData) => {
         try {
           set({ isLoading: true, error: null })
 
@@ -100,7 +107,7 @@ export const useAuthStore = create<AuthStore>()(
             headers: {
               'Content-Type': 'application/json',
             },
-            body: JSON.stringify({ name, email, password }),
+            body: JSON.stringify({ name, email, password, teamData }),
           })
 
           const data = await response.json()

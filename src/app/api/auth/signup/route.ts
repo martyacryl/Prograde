@@ -22,7 +22,7 @@ export async function POST(request: NextRequest) {
     }
     
     const body = await request.json()
-    const { email, password, name } = body
+    const { email, password, name, teamData } = body
     
     // Validation
     if (!email || !password || !name) {
@@ -73,35 +73,56 @@ export async function POST(request: NextRequest) {
     // Hash password
     const hashedPassword = await hashPassword(sanitizedPassword)
     
-    // Create user
-    const user = await prisma.user.create({
-      data: {
-        email: sanitizedEmail,
-        name: sanitizedName,
-        password: hashedPassword,
-        role: 'HEAD_COACH', // Default role
-        isActive: true
-      },
-      include: { team: true }
+    // Create user and team in transaction
+    const result = await prisma.$transaction(async (tx) => {
+      let teamId = null
+      
+      // Create team if teamData is provided
+      if (teamData) {
+        const team = await tx.team.create({
+          data: {
+            name: sanitizeInput(teamData.name),
+            abbreviation: sanitizeInput(teamData.abbreviation.toUpperCase()),
+            level: teamData.level as any,
+            conference: teamData.conference ? sanitizeInput(teamData.conference) : null
+          }
+        })
+        teamId = team.id
+      }
+      
+      // Create user
+      const user = await tx.user.create({
+        data: {
+          email: sanitizedEmail,
+          name: sanitizedName,
+          password: hashedPassword,
+          role: 'HEAD_COACH', // Default role
+          isActive: true,
+          teamId
+        },
+        include: { team: true }
+      })
+      
+      return user
     })
     
     // Generate JWT token
     const token = generateToken({
-      userId: user.id,
-      email: user.email,
-      role: user.role,
-      teamId: user.teamId
+      userId: result.id,
+      email: result.email,
+      role: result.role,
+      teamId: result.teamId
     })
     
     return NextResponse.json({
       success: true,
       user: {
-        id: user.id,
-        email: user.email,
-        name: user.name,
-        role: user.role,
-        teamId: user.teamId,
-        team: user.team
+        id: result.id,
+        email: result.email,
+        name: result.name,
+        role: result.role,
+        teamId: result.teamId,
+        team: result.team
       },
       token
     })

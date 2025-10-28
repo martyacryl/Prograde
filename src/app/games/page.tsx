@@ -1,61 +1,55 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { 
   PlayIcon, 
   CalendarIcon,
   TrophyIcon,
   ArrowRightIcon,
-  CheckCircleIcon
+  CheckCircleIcon,
+  ArrowTopRightOnSquareIcon,
+  StarIcon
 } from '@heroicons/react/24/outline';
 
 export default function GamesPage() {
-  // Mock games data - replace with real data from API
-  const games = [
-    {
-      id: 'game-1',
-      homeTeam: 'Michigan',
-      awayTeam: 'Ohio State',
-      date: '2023-11-25',
-      score: '30-24',
-      status: 'completed',
-      playsGraded: 152,
-      totalPlays: 152,
-      lastGraded: '2 hours ago'
-    },
-    {
-      id: 'game-2', 
-      homeTeam: 'Alabama',
-      awayTeam: 'Georgia',
-      date: '2023-12-02',
-      score: '27-24',
-      status: 'completed',
-      playsGraded: 89,
-      totalPlays: 147,
-      lastGraded: '1 day ago'
-    },
-    {
-      id: 'game-3',
-      homeTeam: 'Michigan',
-      awayTeam: 'Penn State',
-      date: '2024-11-16',
-      score: null,
-      status: 'upcoming',
-      playsGraded: 0,
-      totalPlays: 0,
-      lastGraded: null
+  const [games, setGames] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    loadGames();
+  }, []);
+
+  const loadGames = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch('/api/games');
+      const data = await response.json();
+      
+      if (data.success) {
+        setGames(data.games);
+      } else {
+        setError(data.error || 'Failed to load games');
+      }
+    } catch (error) {
+      console.error('Error loading games:', error);
+      setError('Failed to load games');
+    } finally {
+      setLoading(false);
     }
-  ];
+  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'completed': return 'bg-green-100 text-green-800';
       case 'in-progress': return 'bg-blue-100 text-blue-800';
       case 'upcoming': return 'bg-gray-100 text-gray-800';
+      case 'Imported': return 'bg-blue-100 text-blue-800';
       default: return 'bg-gray-100 text-gray-800';
     }
   };
@@ -65,9 +59,43 @@ export default function GamesPage() {
       case 'completed': return 'Completed';
       case 'in-progress': return 'In Progress';
       case 'upcoming': return 'Upcoming';
+      case 'Imported': return 'Ready to Grade';
       default: return 'Unknown';
     }
   };
+
+  if (loading) {
+    return (
+      <div className="space-y-8">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">Games</h1>
+            <p className="text-gray-600 mt-2">Select a game to start grading plays</p>
+          </div>
+        </div>
+        <div className="text-center py-12">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+          <p>Loading games...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="space-y-8">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">Games</h1>
+            <p className="text-gray-600 mt-2">Select a game to start grading plays</p>
+          </div>
+        </div>
+        <Alert variant="destructive">
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8">
@@ -108,8 +136,8 @@ export default function GamesPage() {
             </CardHeader>
             
             <CardContent className="space-y-4">
-              {/* Progress for completed/in-progress games */}
-              {(game.status === 'completed' || game.status === 'in-progress') && (
+              {/* Progress for games with plays */}
+              {game.totalPlays > 0 && (
                 <div className="space-y-2">
                   <div className="flex justify-between text-sm">
                     <span className="text-gray-600">Grading Progress</span>
@@ -121,13 +149,13 @@ export default function GamesPage() {
                     <div 
                       className="bg-blue-600 h-2 rounded-full transition-all"
                       style={{ 
-                        width: `${(game.playsGraded / game.totalPlays) * 100}%` 
+                        width: `${game.totalPlays > 0 ? (game.playsGraded / game.totalPlays) * 100 : 0}%` 
                       }}
                     />
                   </div>
                   {game.lastGraded && (
                     <p className="text-xs text-gray-500">
-                      Last graded: {game.lastGraded}
+                      Last graded: {new Date(game.lastGraded).toLocaleDateString()}
                     </p>
                   )}
                 </div>
@@ -147,7 +175,7 @@ export default function GamesPage() {
                   <Link href={`/games/${game.id}`} className="block">
                     <Button className="w-full">
                       <PlayIcon className="h-4 w-4 mr-2" />
-                      {game.status === 'completed' ? 'Review Grades' : 'Continue Grading'}
+                      {game.playsGraded === game.totalPlays ? 'Review Grades' : 'Start Grading'}
                       <ArrowRightIcon className="h-4 w-4 ml-2" />
                     </Button>
                   </Link>
@@ -155,7 +183,7 @@ export default function GamesPage() {
               </div>
 
               {/* Quick Stats for completed games */}
-              {game.status === 'completed' && (
+              {game.playsGraded === game.totalPlays && game.totalPlays > 0 && (
                 <div className="pt-4 border-t border-gray-200">
                   <div className="flex items-center justify-center text-sm text-gray-600">
                     <CheckCircleIcon className="h-4 w-4 mr-1 text-green-600" />

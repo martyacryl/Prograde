@@ -10,8 +10,10 @@ import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Trash2, Plus, Edit, Save, X } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Trash2, Plus, Edit, Save, X, CheckCircle } from 'lucide-react';
 import { getPositionModule, PositionConfiguration, GradingField } from '@/modules/core/position-registry';
+import { useAuthStore } from '@/stores/authStore';
 
 interface EditingField extends GradingField {
   isNew?: boolean;
@@ -20,23 +22,80 @@ interface EditingField extends GradingField {
 export default function PositionConfigurationPage() {
   const params = useParams();
   const positionName = params.position as string;
+  const { user } = useAuthStore();
   
   const [moduleData, setModuleData] = useState<any>(null);
   const [config, setConfig] = useState<PositionConfiguration | null>(null);
   const [newTag, setNewTag] = useState('');
   const [editingField, setEditingField] = useState<EditingField | null>(null);
   const [showFieldDialog, setShowFieldDialog] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveStatus, setSaveStatus] = useState<'idle' | 'success' | 'error'>('idle');
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const moduleId = Object.keys(require('@/modules/core/position-registry').POSITION_MODULES)
-      .find(key => require('@/modules/core/position-registry').POSITION_MODULES[key].name === positionName);
-    
-    if (moduleId) {
+    loadConfiguration();
+  }, [positionName, user]);
+
+  const loadConfiguration = async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+
+      // Get position module
+      const moduleId = Object.keys(require('@/modules/core/position-registry').POSITION_MODULES)
+        .find(key => require('@/modules/core/position-registry').POSITION_MODULES[key].name === positionName);
+      
+      if (!moduleId) {
+        setError('Position module not found');
+        return;
+      }
+
       const module = getPositionModule(moduleId);
       setModuleData(module);
-      setConfig(module?.defaultConfig || null);
+
+      // Load configuration from API if user and team exist
+      if (user?.teamId) {
+        const response = await fetch(
+          `/api/position-config?positionGroupId=${moduleId}&teamId=${user.teamId}`
+        );
+        
+        if (response.ok) {
+          const data = await response.json();
+          if (data.success && data.config) {
+            setConfig({
+              gradingFields: data.config.gradingFields,
+              metricFields: data.config.metricFields,
+              tags: data.config.tags,
+              settings: data.config.settings
+            });
+          } else {
+            // Use default configuration
+            setConfig(module?.defaultConfig || null);
+          }
+        } else {
+          // Use default configuration
+          setConfig(module?.defaultConfig || null);
+        }
+      } else {
+        // Use default configuration
+        setConfig(module?.defaultConfig || null);
+      }
+    } catch (error) {
+      console.error('Error loading configuration:', error);
+      setError('Failed to load configuration');
+      // Fallback to default config
+      const moduleId = Object.keys(require('@/modules/core/position-registry').POSITION_MODULES)
+        .find(key => require('@/modules/core/position-registry').POSITION_MODULES[key].name === positionName);
+      if (moduleId) {
+        const module = getPositionModule(moduleId);
+        setConfig(module?.defaultConfig || null);
+      }
+    } finally {
+      setIsLoading(false);
     }
-  }, [positionName]);
+  };
 
   // Field Management Functions
   const createNewField = () => {
@@ -116,14 +175,69 @@ export default function PositionConfigurationPage() {
   };
 
   const saveConfiguration = async () => {
-    console.log('Saving configuration:', config);
-    alert('Configuration saved! (TODO: Implement API call)');
+    if (!config || !user?.teamId || !moduleData) {
+      setError('Missing required data for saving');
+      return;
+    }
+
+    try {
+      setIsSaving(true);
+      setError(null);
+      setSaveStatus('idle');
+
+      const moduleId = Object.keys(require('@/modules/core/position-registry').POSITION_MODULES)
+        .find(key => require('@/modules/core/position-registry').POSITION_MODULES[key].name === positionName);
+
+      if (!moduleId) {
+        throw new Error('Position module not found');
+      }
+
+      const response = await fetch('/api/position-config', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          positionGroupId: moduleId,
+          teamId: user.teamId,
+          userId: user.id,
+          gradingFields: config.gradingFields,
+          metricFields: config.metricFields || {},
+          tags: config.tags,
+          settings: config.settings
+        }),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        setSaveStatus('success');
+        setTimeout(() => setSaveStatus('idle'), 3000);
+      } else {
+        throw new Error(data.error || 'Failed to save configuration');
+      }
+    } catch (error) {
+      console.error('Error saving configuration:', error);
+      setError(error instanceof Error ? error.message : 'Failed to save configuration');
+      setSaveStatus('error');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
-  if (!moduleData || !config) {
+  const useDefaultConfiguration = () => {
+    if (moduleData?.defaultConfig) {
+      setConfig(moduleData.defaultConfig);
+    }
+  };
+
+  if (isLoading || !moduleData || !config) {
     return (
       <div className="max-w-4xl mx-auto px-4 py-8">
-        <div className="text-center">Loading...</div>
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+          <p>Loading configuration...</p>
+        </div>
       </div>
     );
   }
@@ -140,7 +254,54 @@ export default function PositionConfigurationPage() {
               <p className="text-gray-600">{moduleData.description}</p>
             </div>
           </div>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              onClick={useDefaultConfiguration}
+              disabled={isSaving}
+            >
+              Use Default
+            </Button>
+            <Button
+              onClick={saveConfiguration}
+              disabled={isSaving}
+              className="min-w-[120px]"
+            >
+              {isSaving ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                  Saving...
+                </>
+              ) : saveStatus === 'success' ? (
+                <>
+                  <CheckCircle className="h-4 w-4 mr-2" />
+                  Saved!
+                </>
+              ) : (
+                <>
+                  <Save className="h-4 w-4 mr-2" />
+                  Save Configuration
+                </>
+              )}
+            </Button>
+          </div>
         </div>
+
+        {/* Status Messages */}
+        {error && (
+          <Alert variant="destructive">
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
+
+        {saveStatus === 'success' && (
+          <Alert className="border-green-200 bg-green-50">
+            <CheckCircle className="h-4 w-4 text-green-600" />
+            <AlertDescription className="text-green-800">
+              Configuration saved successfully!
+            </AlertDescription>
+          </Alert>
+        )}
 
         {/* Grading Fields Management */}
         <Card>
@@ -437,14 +598,6 @@ export default function PositionConfigurationPage() {
             </div>
           </CardContent>
         </Card>
-
-        {/* Save Button */}
-        <div className="flex justify-end">
-          <Button onClick={saveConfiguration} size="lg" className="px-8">
-            <Save className="h-4 w-4 mr-2" />
-            Save Configuration
-          </Button>
-        </div>
       </div>
     </div>
   );

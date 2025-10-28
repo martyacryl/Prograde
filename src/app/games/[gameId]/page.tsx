@@ -25,44 +25,71 @@ export default function GameGradingPage() {
   }, [gameId]);
 
   const loadGameData = async () => {
-    // TODO: Load real game data from database
-    // For now, use mock data
-    const mockGame = {
-      id: gameId,
-      homeTeam: 'Michigan',
-      awayTeam: 'Ohio State',
-      date: '2023-11-25',
-      score: '30-24',
-      status: 'FINAL',
-      totalPlays: 152
-    };
-    
-    const mockPlays = Array.from({ length: 152 }, (_, i) => ({
-      id: i + 1,
-      quarter: Math.ceil((i + 1) / 38),
-      down: Math.floor(Math.random() * 4) + 1,
-      distance: Math.floor(Math.random() * 15) + 1,
-      yardLine: Math.floor(Math.random() * 100),
-      playType: Math.random() > 0.6 ? 'pass' : 'run',
-      description: `Play ${i + 1} description from imported game data`
-    }));
-    
-    setGameData(mockGame);
-    setPlays(mockPlays);
-    
-    // Load grading progress
-    loadGradingProgress();
+    try {
+      const response = await fetch(`/api/games/${gameId}`);
+      const data = await response.json();
+      
+      if (data.success) {
+        setGameData(data.game);
+        setPlays(data.game.plays || []);
+        loadGradingProgress();
+      } else {
+        console.error('Failed to load game:', data.error);
+        // Fallback to mock data if API fails
+        const mockGame = {
+          id: gameId,
+          homeTeam: 'Unknown',
+          awayTeam: 'Unknown',
+          date: new Date().toISOString().split('T')[0],
+          score: null,
+          status: 'Unknown',
+          totalPlays: 0
+        };
+        setGameData(mockGame);
+        setPlays([]);
+      }
+    } catch (error) {
+      console.error('Error loading game:', error);
+      // Fallback to mock data if API fails
+      const mockGame = {
+        id: gameId,
+        homeTeam: 'Unknown',
+        awayTeam: 'Unknown',
+        date: new Date().toISOString().split('T')[0],
+        score: null,
+        status: 'Unknown',
+        totalPlays: 0
+      };
+      setGameData(mockGame);
+      setPlays([]);
+    }
   };
 
   const loadGradingProgress = async () => {
-    // TODO: Query database for grading progress per position group
-    const mockProgress = {
-      'OFFENSIVE_LINE': 23,
-      'QUARTERBACK': 45,
-      'RUNNING_BACK': 12,
-      'WIDE_RECEIVER': 8
-    };
-    setGradingProgress(mockProgress);
+    try {
+      // Query database for grading progress per position group
+      const response = await fetch(`/api/games/${gameId}/grading-progress`);
+      const data = await response.json();
+      
+      if (data.success) {
+        setGradingProgress(data.progress);
+      } else {
+        // Fallback to empty progress if API fails
+        const emptyProgress: Record<string, number> = {};
+        positionModules.forEach(module => {
+          emptyProgress[module.id] = 0;
+        });
+        setGradingProgress(emptyProgress);
+      }
+    } catch (error) {
+      console.error('Error loading grading progress:', error);
+      // Fallback to empty progress if API fails
+      const emptyProgress: Record<string, number> = {};
+      positionModules.forEach(module => {
+        emptyProgress[module.id] = 0;
+      });
+      setGradingProgress(emptyProgress);
+    }
   };
 
   if (!gameData) {
