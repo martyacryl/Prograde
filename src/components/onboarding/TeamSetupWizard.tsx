@@ -114,9 +114,9 @@ export function TeamSetupWizard({ onComplete, onCancel }: SetupWizardProps) {
           const allConfigs = configResults.reduce((acc, config) => ({ ...acc, ...config }), {});
           
           // Filter out null configs
-          const validConfigs = Object.fromEntries(
+          const validConfigs: Record<string, PositionConfiguration> = Object.fromEntries(
             Object.entries(allConfigs).filter(([_, config]) => config !== null && config !== undefined)
-          );
+          ) as Record<string, PositionConfiguration>;
           
           setConfigurations(validConfigs);
           
