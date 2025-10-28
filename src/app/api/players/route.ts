@@ -22,7 +22,10 @@ export async function GET(request: NextRequest) {
           select: {
             id: true,
             name: true,
-            abbreviation: true
+            abbreviation: true,
+            primaryColor: true,
+            secondaryColor: true,
+            logo: true
           }
         },
         season: {
@@ -66,7 +69,9 @@ export async function POST(request: NextRequest) {
       year, 
       height, 
       weight, 
-      hometown 
+      hometown,
+      headshotUrl,
+      headshotLocalPath
     } = body;
 
     if (!teamId || !seasonId || !jerseyNumber || !firstName || !lastName || !position) {
@@ -105,14 +110,19 @@ export async function POST(request: NextRequest) {
         year,
         height,
         weight,
-        hometown
+        hometown,
+        headshotUrl,
+        headshotLocalPath
       },
       include: {
         team: {
           select: {
             id: true,
             name: true,
-            abbreviation: true
+            abbreviation: true,
+            primaryColor: true,
+            secondaryColor: true,
+            logo: true
           }
         },
         season: {

@@ -57,6 +57,8 @@ model Player {
   height      String?  // "6'4\""
   weight      Int?     // Weight in pounds
   hometown    String?  // "Detroit, MI"
+  headshotUrl String?  // URL to player headshot image
+  headshotLocalPath String? // Local path for cached headshot
   isActive    Boolean  @default(true)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -100,8 +102,12 @@ model Team {
   conference        String?
   division          String?
   level             Level
-  logo              String?
-  colors            Json?
+  logo              String?  // URL to team logo
+  logoLocalPath     String?  // Local path for cached logo
+  primaryColor      String?  // Primary team color (hex)
+  secondaryColor    String?  // Secondary team color (hex)
+  accentColor       String?  // Accent color (hex)
+  colors            Json?    // Extended color palette
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 
