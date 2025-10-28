@@ -22,6 +22,7 @@ import {
   HomeIcon
 } from '@heroicons/react/24/outline';
 import { PositionConfigEditor } from './PositionConfigEditor';
+import { PositionConfiguration } from '@/modules/shared/types';
 
 interface PositionGroup {
   id: string;
@@ -30,28 +31,6 @@ interface PositionGroup {
   category: string;
   positions: string[];
   isActive: boolean;
-}
-
-interface PositionConfiguration {
-  id?: string;
-  positionGroupId: string;
-  gradingFields: Array<{
-    id: string;
-    name: string;
-    type: string;
-    min: number;
-    max: number;
-    weight: number;
-    description?: string;
-  }>;
-  metricFields: Record<string, any>;
-  tags: string[];
-  settings: {
-    showPlayerNumbers: boolean;
-    allowMultiplePositions: boolean;
-    defaultView: string;
-    quickGradeEnabled: boolean;
-  };
 }
 
 interface SetupWizardProps {
