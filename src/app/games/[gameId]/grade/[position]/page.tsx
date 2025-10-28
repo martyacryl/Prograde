@@ -63,7 +63,7 @@ export default function GamePositionGradingPage() {
   const [plays, setPlays] = useState<Play[]>([]);
   const [gameRoster, setGameRoster] = useState<GameRoster[]>([]);
   const [currentPlay, setCurrentPlay] = useState(0);
-  const [savedGrades, setSavedGrades] = useState<Record<number, PositionGrade[]>>({});
+  const [savedGrades, setSavedGrades] = useState<Record<string, PositionGrade[]>>({});
   const [playerAssignments, setPlayerAssignments] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
