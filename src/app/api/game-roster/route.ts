@@ -5,15 +5,37 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const gameId = searchParams.get('gameId');
-    const teamId = searchParams.get('teamId');
-    const position = searchParams.get('position');
+    const positionGroup = searchParams.get('positionGroup');
 
-    const where: any = {};
-    if (gameId) where.gameId = gameId;
-    if (teamId) where.teamId = teamId;
-    if (position) where.position = position;
+    if (!gameId) {
+      return NextResponse.json(
+        { success: false, error: 'Game ID is required' },
+        { status: 400 }
+      );
+    }
 
-    const rosters = await prisma.gameRoster.findMany({
+    const where: any = { gameId };
+    if (positionGroup) {
+      // Filter by position group (e.g., OL positions: LT, LG, C, RG, RT)
+      const positionGroupMap: Record<string, string[]> = {
+        'OFFENSIVE_LINE': ['LT', 'LG', 'C', 'RG', 'RT'],
+        'QUARTERBACK': ['QB'],
+        'RUNNING_BACK': ['RB', 'FB'],
+        'WIDE_RECEIVER': ['WR'],
+        'TIGHT_END': ['TE'],
+        'DEFENSIVE_LINE': ['DE', 'DT', 'NT'],
+        'LINEBACKER': ['LB', 'MLB', 'OLB'],
+        'CORNERBACK': ['CB'],
+        'SAFETY': ['S', 'FS', 'SS']
+      };
+      
+      const positions = positionGroupMap[positionGroup] || [];
+      if (positions.length > 0) {
+        where.position = { in: positions };
+      }
+    }
+
+    const roster = await prisma.gameRoster.findMany({
       where,
       include: {
         player: {
@@ -26,42 +48,23 @@ export async function GET(request: NextRequest) {
               }
             }
           }
-        },
-        game: {
-          select: {
-            id: true,
-            date: true,
-            team: {
-              select: {
-                name: true,
-                abbreviation: true
-              }
-            },
-            opponent: {
-              select: {
-                name: true,
-                abbreviation: true
-              }
-            }
-          }
         }
       },
       orderBy: [
         { position: 'asc' },
-        { isStarter: 'desc' },
-        { player: { jerseyNumber: 'asc' } }
+        { isStarter: 'desc' }
       ]
     });
 
     return NextResponse.json({
       success: true,
-      rosters
+      roster
     });
 
   } catch (error) {
-    console.error('Failed to load game rosters:', error);
+    console.error('Failed to load game roster:', error);
     return NextResponse.json(
-      { success: false, error: 'Failed to load game rosters' },
+      { success: false, error: 'Failed to load game roster' },
       { status: 500 }
     );
   }
@@ -70,22 +73,16 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { 
-      gameId, 
-      teamId, 
-      playerId, 
-      position, 
-      isStarter = true 
-    } = body;
+    const { gameId, teamId, playerId, position, isStarter = false } = body;
 
     if (!gameId || !teamId || !playerId || !position) {
       return NextResponse.json(
-        { success: false, error: 'Missing required fields' },
+        { success: false, error: 'Game ID, Team ID, Player ID, and Position are required' },
         { status: 400 }
       );
     }
 
-    // Check if player is already on roster for this game
+    // Check if roster entry already exists
     const existingRoster = await prisma.gameRoster.findUnique({
       where: {
         gameId_playerId: {
@@ -95,15 +92,20 @@ export async function POST(request: NextRequest) {
       }
     });
 
+    let roster;
     if (existingRoster) {
       // Update existing roster entry
-      const roster = await prisma.gameRoster.update({
+      roster = await prisma.gameRoster.update({
         where: {
-          id: existingRoster.id
+          gameId_playerId: {
+            gameId,
+            playerId
+          }
         },
         data: {
           position,
-          isStarter
+          isStarter,
+          updatedAt: new Date()
         },
         include: {
           player: {
@@ -119,15 +121,9 @@ export async function POST(request: NextRequest) {
           }
         }
       });
-
-      return NextResponse.json({
-        success: true,
-        roster,
-        message: 'Roster updated'
-      });
     } else {
       // Create new roster entry
-      const roster = await prisma.gameRoster.create({
+      roster = await prisma.gameRoster.create({
         data: {
           gameId,
           teamId,
@@ -149,18 +145,17 @@ export async function POST(request: NextRequest) {
           }
         }
       });
-
-      return NextResponse.json({
-        success: true,
-        roster,
-        message: 'Player added to roster'
-      });
     }
 
+    return NextResponse.json({
+      success: true,
+      roster
+    });
+
   } catch (error) {
-    console.error('Failed to manage game roster:', error);
+    console.error('Failed to save game roster:', error);
     return NextResponse.json(
-      { success: false, error: 'Failed to manage game roster' },
+      { success: false, error: 'Failed to save game roster' },
       { status: 500 }
     );
   }
@@ -169,30 +164,34 @@ export async function POST(request: NextRequest) {
 export async function DELETE(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const rosterId = searchParams.get('rosterId');
+    const gameId = searchParams.get('gameId');
+    const playerId = searchParams.get('playerId');
 
-    if (!rosterId) {
+    if (!gameId || !playerId) {
       return NextResponse.json(
-        { success: false, error: 'Roster ID is required' },
+        { success: false, error: 'Game ID and Player ID are required' },
         { status: 400 }
       );
     }
 
     await prisma.gameRoster.delete({
       where: {
-        id: rosterId
+        gameId_playerId: {
+          gameId,
+          playerId
+        }
       }
     });
 
     return NextResponse.json({
       success: true,
-      message: 'Player removed from roster'
+      message: 'Roster entry deleted successfully'
     });
 
   } catch (error) {
-    console.error('Failed to remove player from roster:', error);
+    console.error('Failed to delete roster entry:', error);
     return NextResponse.json(
-      { success: false, error: 'Failed to remove player from roster' },
+      { success: false, error: 'Failed to delete roster entry' },
       { status: 500 }
     );
   }

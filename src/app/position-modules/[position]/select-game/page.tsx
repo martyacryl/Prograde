@@ -1,13 +1,15 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { ArrowLeft, Calendar, Clock, Users, Play, Search, Trophy, BarChart3 } from 'lucide-react';
+import { ArrowLeft, Calendar, Clock, Users, Play, Search } from 'lucide-react';
+import { getPositionModule } from '@/modules/core/position-registry';
 import { useAuthStore } from '@/stores/authStore';
 import Link from 'next/link';
 
@@ -32,31 +34,40 @@ interface Season {
   isActive: boolean;
 }
 
-export default function GamesPage() {
+export default function GameSelectionPage() {
+  const params = useParams();
   const router = useRouter();
+  const positionName = params.position as string;
   const { user } = useAuthStore();
   
+  const [moduleData, setModuleData] = useState<any>(null);
+  const [games, setGames] = useState<Game[]>([]);
   const [seasons, setSeasons] = useState<Season[]>([]);
   const [selectedSeason, setSelectedSeason] = useState<string>('all');
-  const [games, setGames] = useState<Game[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     loadData();
-  }, [user]);
-
-  useEffect(() => {
-    if (selectedSeason) {
-      loadGamesForSeason();
-    }
-  }, [selectedSeason]);
+  }, [positionName, user]);
 
   const loadData = async () => {
     try {
       setIsLoading(true);
       setError(null);
+
+      // Load position module
+      const moduleId = Object.keys(require('@/modules/core/position-registry').POSITION_MODULES)
+        .find(key => require('@/modules/core/position-registry').POSITION_MODULES[key].name === positionName);
+      
+      if (!moduleId) {
+        setError('Position module not found');
+        return;
+      }
+
+      const module = getPositionModule(moduleId);
+      setModuleData(module);
 
       // Load seasons
       if (user?.teamId) {
@@ -65,16 +76,14 @@ export default function GamesPage() {
           const seasonsData = await seasonsResponse.json();
           setSeasons(seasonsData.seasons || []);
           
-          // Set active season as default, or keep "all" if no active season
+          // Set active season as default
           const activeSeason = seasonsData.seasons?.find((s: Season) => s.isActive);
           if (activeSeason) {
             setSelectedSeason(activeSeason.id);
-          } else {
-            setSelectedSeason('all');
           }
         }
 
-        // Load all games for the team
+        // Load games for the team
         const gamesResponse = await fetch(`/api/games?teamId=${user.teamId}`);
         if (gamesResponse.ok) {
           const gamesData = await gamesResponse.json();
@@ -83,15 +92,10 @@ export default function GamesPage() {
       }
     } catch (error) {
       console.error('Error loading data:', error);
-      setError('Failed to load seasons and games');
+      setError('Failed to load games and seasons');
     } finally {
       setIsLoading(false);
     }
-  };
-
-  const loadGamesForSeason = async () => {
-    // Games are already loaded, just filter by season
-    // This could be enhanced to load games per season if needed
   };
 
   const filteredGames = games.filter(game => {
@@ -124,32 +128,12 @@ export default function GamesPage() {
     return 'bg-green-500';
   };
 
-  const getSeasonStats = () => {
-    const seasonGames = filteredGames;
-    const totalPlays = seasonGames.reduce((sum, game) => sum + game.playsCount, 0);
-    const totalGradedPlays = seasonGames.reduce((sum, game) => sum + game.gradedPlaysCount, 0);
-    const completedGames = seasonGames.filter(game => game.gradingProgress === 100).length;
-    const avgGradingProgress = seasonGames.length > 0 
-      ? Math.round(seasonGames.reduce((sum, game) => sum + game.gradingProgress, 0) / seasonGames.length)
-      : 0;
-
-    return {
-      totalGames: seasonGames.length,
-      totalPlays,
-      totalGradedPlays,
-      completedGames,
-      avgGradingProgress
-    };
-  };
-
-  const stats = getSeasonStats();
-
   if (isLoading) {
     return (
       <div className="max-w-6xl mx-auto px-4 py-8">
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-          <p>Loading seasons...</p>
+          <p>Loading games...</p>
         </div>
       </div>
     );
@@ -171,27 +155,30 @@ export default function GamesPage() {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
+            <Button
+              variant="outline"
+              onClick={() => router.push('/position-modules')}
+            >
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Back to Modules
+            </Button>
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">Games</h1>
+              <h1 className="text-3xl font-bold text-gray-900">
+                Select Game to Grade - {moduleData?.displayName}
+              </h1>
               <p className="text-gray-600">
-                View and grade games by season
+                Choose a game from your season to start grading {moduleData?.displayName} plays
               </p>
             </div>
           </div>
-          <Link href="/dashboard/data-import">
-            <Button>
-              <Play className="h-4 w-4 mr-2" />
-              Import New Game
-            </Button>
-          </Link>
         </div>
 
-        {/* Season Selector */}
+        {/* Filters */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Calendar className="h-5 w-5" />
-              Select Season
+              <Search className="h-5 w-5" />
+              Filter Games
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -207,7 +194,6 @@ export default function GamesPage() {
                     {seasons.map(season => (
                       <SelectItem key={season.id} value={season.id}>
                         {season.name}
-                        {season.isActive && ' (Active)'}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -216,73 +202,15 @@ export default function GamesPage() {
               
               <div className="space-y-2">
                 <label className="text-sm font-medium">Search</label>
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                  <input
-                    type="text"
-                    className="w-full pl-10 pr-4 py-2 border rounded-md"
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    placeholder="Search by opponent or week..."
-                  />
-                </div>
+                <Input
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  placeholder="Search by opponent or week..."
+                />
               </div>
             </div>
           </CardContent>
         </Card>
-
-        {/* Season Stats */}
-        {selectedSeason && (
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <Card>
-              <CardContent className="p-4">
-                <div className="flex items-center gap-2">
-                  <Trophy className="h-5 w-5 text-blue-600" />
-                  <div>
-                    <div className="text-2xl font-bold">{stats.totalGames}</div>
-                    <div className="text-sm text-gray-600">Games</div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-            
-            <Card>
-              <CardContent className="p-4">
-                <div className="flex items-center gap-2">
-                  <Play className="h-5 w-5 text-green-600" />
-                  <div>
-                    <div className="text-2xl font-bold">{stats.totalPlays}</div>
-                    <div className="text-sm text-gray-600">Total Plays</div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-            
-            <Card>
-              <CardContent className="p-4">
-                <div className="flex items-center gap-2">
-                  <BarChart3 className="h-5 w-5 text-orange-600" />
-                  <div>
-                    <div className="text-2xl font-bold">{stats.avgGradingProgress}%</div>
-                    <div className="text-sm text-gray-600">Avg Progress</div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-            
-            <Card>
-              <CardContent className="p-4">
-                <div className="flex items-center gap-2">
-                  <Users className="h-5 w-5 text-purple-600" />
-                  <div>
-                    <div className="text-2xl font-bold">{stats.completedGames}</div>
-                    <div className="text-sm text-gray-600">Completed</div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        )}
 
         {/* Games List */}
         <div className="space-y-4">
@@ -300,7 +228,7 @@ export default function GamesPage() {
                 <div className="flex gap-2 justify-center">
                   <Button variant="outline" onClick={() => {
                     setSearchTerm('');
-                    setSelectedSeason('all');
+                    setSelectedSeason('');
                   }}>
                     Clear Filters
                   </Button>
@@ -358,13 +286,7 @@ export default function GamesPage() {
                     </div>
 
                     <div className="flex items-center gap-3">
-                      <Link href={`/games/${game.id}`}>
-                        <Button variant="outline">
-                          <BarChart3 className="h-4 w-4 mr-2" />
-                          Game Overview
-                        </Button>
-                      </Link>
-                      <Link href={`/position-modules/offensive-line/select-game?gameId=${game.id}`}>
+                      <Link href={`/games/${game.id}/grade/${positionName}`}>
                         <Button className="min-w-[120px]">
                           <Play className="h-4 w-4 mr-2" />
                           {game.gradingProgress > 0 ? 'Continue Grading' : 'Start Grading'}
@@ -384,13 +306,12 @@ export default function GamesPage() {
             <div className="flex items-start gap-3">
               <Clock className="h-5 w-5 text-blue-600 mt-0.5" />
               <div>
-                <h4 className="font-semibold text-blue-900 mb-1">Season Navigation Tips</h4>
+                <h4 className="font-semibold text-blue-900 mb-1">Grading Tips</h4>
                 <ul className="text-sm text-blue-800 space-y-1">
-                  <li>• Use the season filter to focus on specific years</li>
-                  <li>• Search by opponent name or week number</li>
-                  <li>• "Game Overview" shows detailed game information</li>
-                  <li>• "Start Grading" takes you to position selection</li>
-                  <li>• Games with higher progress are easier to continue</li>
+                  <li>• Games with higher grading progress are easier to continue</li>
+                  <li>• Start with completed games for the most accurate grading</li>
+                  <li>• Live games allow real-time grading during play</li>
+                  <li>• You can switch between games at any time</li>
                 </ul>
               </div>
             </div>

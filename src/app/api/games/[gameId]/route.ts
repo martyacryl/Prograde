@@ -22,10 +22,10 @@ export async function GET(
                       }
                     }
                   },
-                  orderBy: {
-                    quarter: 'asc',
-                    time: 'asc'
-                  }
+                  orderBy: [
+                    { quarter: 'asc' },
+                    { time: 'asc' }
+                  ]
                 },
                 team: true,
                 opponent: true,
@@ -63,7 +63,11 @@ export async function GET(
         time: play.time,
         down: play.down,
         distance: play.distance,
+        yardLine: play.yardLine,
         playType: play.playType,
+        description: play.description,
+        offense: play.offense,
+        defense: play.defense,
         formation: play.formation,
         personnel: play.personnel,
         playAction: play.playAction,
@@ -73,6 +77,8 @@ export async function GET(
         isThirdDown: play.isThirdDown,
         isFourthDown: play.isFourthDown,
         playersInvolved: play.playersInvolved,
+        externalPlayId: play.externalPlayId,
+        externalSource: play.externalSource,
         hasGrade: !!(play.playGrade || play.positionGrades.length > 0),
         playGrade: play.playGrade,
         positionGrades: play.positionGrades

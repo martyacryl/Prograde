@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -15,7 +15,9 @@ import {
   ClockIcon,
   ArrowTrendingUpIcon,
   CheckCircleIcon,
-  ExclamationTriangleIcon
+  ExclamationTriangleIcon,
+  ArrowPathIcon,
+  CogIcon
 } from '@heroicons/react/24/outline';
 
 interface StatCardProps {
@@ -152,43 +154,113 @@ const ActivityItem: React.FC<ActivityItemProps> = ({ type, title, description, t
   );
 };
 
+interface DashboardAnalytics {
+  stats: {
+    totalGames: number;
+    totalPlays: number;
+    gradedPlays: number;
+    successRate: number;
+    averageGrade: number;
+    gamesTrend: number;
+    gradedPlaysToday: number;
+    activeGraders: number;
+  };
+  recentActivity: Array<{
+    type: 'game' | 'import' | 'analysis' | 'system';
+    title: string;
+    description: string;
+    time: string;
+    status: 'success' | 'pending' | 'error';
+  }>;
+  upcomingGames: Array<{
+    team: string;
+    opponent: string;
+    date: string;
+    time: string;
+    venue: string;
+  }>;
+  team: {
+    name: string;
+    abbreviation: string;
+  };
+}
+
 export default function DashboardPage() {
   const { user } = useAuthStore();
+  const [analytics, setAnalytics] = useState<DashboardAnalytics | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const stats = [
+  useEffect(() => {
+    if (user?.teamId) {
+      loadAnalytics();
+    }
+  }, [user?.teamId]);
+
+  const loadAnalytics = async () => {
+    if (!user?.teamId) return;
+    
+    try {
+      setLoading(true);
+      setError(null);
+      
+      const response = await fetch(`/api/dashboard/analytics?teamId=${user.teamId}`);
+      const data = await response.json();
+      
+      if (data.success) {
+        setAnalytics(data.analytics);
+      } else {
+        setError(data.error || 'Failed to load analytics');
+      }
+    } catch (err) {
+      console.error('Error loading analytics:', err);
+      setError('Failed to load analytics');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const stats = analytics ? [
     {
       title: "Total Games",
-      value: "24",
-      change: "+3 this week",
-      trend: "up" as const,
+      value: analytics.stats.totalGames,
+      change: analytics.stats.gamesTrend > 0 ? `+${analytics.stats.gamesTrend} this week` : 
+              analytics.stats.gamesTrend < 0 ? `${analytics.stats.gamesTrend} this week` : 
+              "No change this week",
+      trend: analytics.stats.gamesTrend > 0 ? "up" as const : 
+             analytics.stats.gamesTrend < 0 ? "down" as const : 
+             "neutral" as const,
       icon: <TrophyIcon className="w-6 h-6" />,
       description: "Games analyzed this season"
     },
     {
       title: "Plays Graded",
-      value: "2,847",
-      change: "+156 today",
-      trend: "up" as const,
+      value: analytics.stats.gradedPlays.toLocaleString(),
+      change: analytics.stats.gradedPlaysToday > 0 ? `+${analytics.stats.gradedPlaysToday} today` : 
+              "No grading today",
+      trend: analytics.stats.gradedPlaysToday > 0 ? "up" as const : "neutral" as const,
       icon: <PlayIcon className="w-6 h-6" />,
       description: "Total plays evaluated"
     },
     {
       title: "Success Rate",
-      value: "73.2%",
-      change: "+2.1% vs last week",
-      trend: "up" as const,
+      value: `${analytics.stats.successRate}%`,
+      change: `Avg grade: ${analytics.stats.averageGrade}/5`,
+      trend: analytics.stats.successRate >= 70 ? "up" as const : 
+             analytics.stats.successRate >= 50 ? "neutral" as const : 
+             "down" as const,
       icon: <ArrowTrendingUpIcon className="w-6 h-6" />,
       description: "Overall team performance"
     },
     {
       title: "Active Graders",
-      value: "8",
-      change: "2 online now",
+      value: analytics.stats.activeGraders,
+      change: "You are online",
       trend: "neutral" as const,
       icon: <UsersIcon className="w-6 h-6" />,
       description: "Coaches using system"
     }
-  ];
+  ] : [];
 
   const quickActions = [
     {
@@ -197,6 +269,12 @@ export default function DashboardPage() {
       href: "/games",
       icon: <PlayIcon className="w-6 h-6" />,
       variant: 'primary' as const
+    },
+    {
+      title: "Setup Wizard",
+      description: "Configure position groups and grading settings",
+      href: "/team-setup",
+      icon: <CogIcon className="w-6 h-6" />
     },
     {
       title: "Import Game Data",
@@ -218,60 +296,32 @@ export default function DashboardPage() {
     }
   ];
 
-  const recentActivity = [
-    {
-      type: 'game' as const,
-      title: "Michigan vs Ohio State",
-      description: "Live game completed - 152 plays graded",
-      time: "2 hours ago",
-      status: 'success' as const
-    },
-    {
-      type: 'import' as const,
-      title: "Data Import Complete",
-      description: "SEC Championship game imported successfully",
-      time: "4 hours ago",
-      status: 'success' as const
-    },
-    {
-      type: 'analysis' as const,
-      title: "OL Module Analysis",
-      description: "Offensive line performance report generated",
-      time: "6 hours ago",
-      status: 'success' as const
-    },
-    {
-      type: 'system' as const,
-      title: "System Update",
-      description: "New grading features available",
-      time: "1 day ago",
-      status: 'success' as const
-    }
-  ];
+  const recentActivity = analytics?.recentActivity || [];
+  const upcomingGames = analytics?.upcomingGames || [];
 
-  const upcomingGames = [
-    {
-      team: "Michigan",
-      opponent: "Penn State",
-      date: "Nov 16, 2024",
-      time: "3:30 PM",
-      venue: "Michigan Stadium"
-    },
-    {
-      team: "Michigan",
-      opponent: "Maryland",
-      date: "Nov 23, 2024",
-      time: "12:00 PM",
-      venue: "Maryland Stadium"
-    },
-    {
-      team: "Michigan",
-      opponent: "Ohio State",
-      date: "Nov 30, 2024",
-      time: "12:00 PM",
-      venue: "Ohio Stadium"
-    }
-  ];
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center space-y-4">
+          <ArrowPathIcon className="w-8 h-8 animate-spin text-primary-600 mx-auto" />
+          <p className="text-gray-600">Loading dashboard analytics...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="text-center space-y-4">
+        <ExclamationTriangleIcon className="w-12 h-12 text-destructive-600 mx-auto" />
+        <h2 className="text-xl font-semibold text-gray-900">Error Loading Dashboard</h2>
+        <p className="text-gray-600">{error}</p>
+        <Button onClick={loadAnalytics} variant="outline">
+          Try Again
+        </Button>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8">
@@ -283,9 +333,9 @@ export default function DashboardPage() {
         <p className="text-xl text-gray-600 max-w-2xl mx-auto">
           Ready to analyze today's performance? Here's what's happening with your team.
         </p>
-        {user?.team && (
+        {analytics?.team && (
           <Badge variant="secondary" className="mt-2">
-            {user.team.name}
+            {analytics.team.name}
           </Badge>
         )}
       </div>
@@ -328,9 +378,17 @@ export default function DashboardPage() {
             </CardHeader>
             <CardContent className="p-6">
               <div className="space-y-1">
-                {recentActivity.map((activity, index) => (
-                  <ActivityItem key={index} {...activity} />
-                ))}
+                {recentActivity.length > 0 ? (
+                  recentActivity.map((activity, index) => (
+                    <ActivityItem key={index} {...activity} />
+                  ))
+                ) : (
+                  <div className="text-center py-8 text-gray-500">
+                    <PlayIcon className="w-8 h-8 mx-auto mb-2 text-gray-400" />
+                    <p>No recent activity</p>
+                    <p className="text-sm">Start grading games to see activity here</p>
+                  </div>
+                )}
               </div>
               <div className="mt-6 pt-4 border-t border-gray-200">
                 <Link 
@@ -358,29 +416,37 @@ export default function DashboardPage() {
             </CardHeader>
             <CardContent className="p-6">
               <div className="space-y-4">
-                {upcomingGames.map((game, index) => (
-                  <div key={index} className="p-4 bg-gray-50 rounded-lg">
-                    <div className="flex items-center justify-between mb-2">
-                      <h4 className="font-medium text-gray-900">
-                        {game.team} vs {game.opponent}
-                      </h4>
-                      <Badge variant="secondary" className="text-xs">
-                        {game.date}
-                      </Badge>
+                {upcomingGames.length > 0 ? (
+                  upcomingGames.map((game, index) => (
+                    <div key={index} className="p-4 bg-gray-50 rounded-lg">
+                      <div className="flex items-center justify-between mb-2">
+                        <h4 className="font-medium text-gray-900">
+                          {game.team} vs {game.opponent}
+                        </h4>
+                        <Badge variant="secondary" className="text-xs">
+                          {game.date}
+                        </Badge>
+                      </div>
+                      <div className="text-sm text-gray-600 space-y-1">
+                        <p>{game.time} • {game.venue}</p>
+                      </div>
+                      <div className="mt-3 flex space-x-2">
+                        <Button size="sm" variant="outline" className="text-xs">
+                          Prepare
+                        </Button>
+                        <Button size="sm" variant="outline" className="text-xs">
+                          View Opponent
+                        </Button>
+                      </div>
                     </div>
-                    <div className="text-sm text-gray-600 space-y-1">
-                      <p>{game.time} • {game.venue}</p>
-                    </div>
-                    <div className="mt-3 flex space-x-2">
-                      <Button size="sm" variant="outline" className="text-xs">
-                        Prepare
-                      </Button>
-                      <Button size="sm" variant="outline" className="text-xs">
-                        View Opponent
-                      </Button>
-                    </div>
+                  ))
+                ) : (
+                  <div className="text-center py-8 text-gray-500">
+                    <TrophyIcon className="w-8 h-8 mx-auto mb-2 text-gray-400" />
+                    <p>No upcoming games</p>
+                    <p className="text-sm">Import games to see your schedule</p>
                   </div>
-                ))}
+                )}
               </div>
               <div className="mt-6 pt-4 border-t border-gray-200">
                 <Link 

@@ -63,6 +63,8 @@ export const useAuthStore = create<AuthStore>()(
         try {
           set({ isLoading: true, error: null })
 
+          console.log('Login attempt:', { email, url: `${getApiBaseUrl()}/api/auth/login` })
+
           const response = await fetch(`${getApiBaseUrl()}/api/auth/login`, {
             method: 'POST',
             headers: {
@@ -71,7 +73,11 @@ export const useAuthStore = create<AuthStore>()(
             body: JSON.stringify({ email, password }),
           })
 
+          console.log('Login response status:', response.status)
+          console.log('Login response ok:', response.ok)
+
           const data = await response.json()
+          console.log('Login response data:', data)
 
           if (data.success && data.user && data.token) {
             set({
@@ -90,6 +96,7 @@ export const useAuthStore = create<AuthStore>()(
             return false
           }
         } catch (error) {
+          console.error('Login error:', error)
           set({
             error: error instanceof Error ? error.message : 'Login failed',
             isLoading: false
@@ -102,15 +109,19 @@ export const useAuthStore = create<AuthStore>()(
         try {
           set({ isLoading: true, error: null })
 
+          const requestData = { name, email, password, teamData }
+          console.log('Signup request data:', requestData)
+
           const response = await fetch(`${getApiBaseUrl()}/api/auth/signup`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
             },
-            body: JSON.stringify({ name, email, password, teamData }),
+            body: JSON.stringify(requestData),
           })
 
           const data = await response.json()
+          console.log('Signup response:', { status: response.status, data })
 
           if (data.success && data.user && data.token) {
             set({

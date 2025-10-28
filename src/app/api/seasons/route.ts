@@ -5,6 +5,7 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const isActive = searchParams.get('isActive');
+    const teamId = searchParams.get('teamId'); // For future use if needed
 
     const where: any = {};
     if (isActive !== null) where.isActive = isActive === 'true';
@@ -18,7 +19,12 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      seasons
+      seasons: seasons.map(season => ({
+        id: season.id,
+        year: season.year,
+        name: `${season.year} Season`,
+        isActive: season.isActive
+      }))
     });
 
   } catch (error) {

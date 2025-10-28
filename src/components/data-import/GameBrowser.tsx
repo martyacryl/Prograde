@@ -111,7 +111,7 @@ export default function GameBrowser({
           !game.awayTeam.toLowerCase().includes(filters.opponent.toLowerCase())) {
         return false;
       }
-      if (filters.conference && game.conference !== filters.conference) {
+      if (filters.conference && filters.conference !== 'all' && game.conference !== filters.conference) {
         return false;
       }
       if (filters.minPlays && game.playCount && game.playCount < filters.minPlays) {
@@ -183,14 +183,14 @@ export default function GameBrowser({
             <div className="w-32">
               <Label htmlFor="week" className="text-sm">Week</Label>
               <Select
-                value={filters.week?.toString() || ''}
+                value={filters.week?.toString() || 'all'}
                 onValueChange={(value) => setFilters(prev => ({ ...prev, week: value ? parseInt(value) : undefined }))}
               >
                 <SelectTrigger className="mt-1">
                   <SelectValue placeholder="All Weeks" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Weeks</SelectItem>
+                  <SelectItem value="all">All Weeks</SelectItem>
                   {Array.from({ length: 16 }, (_, i) => i + 1).map((week) => (
                     <SelectItem key={week} value={week.toString()}>
                       Week {week}
@@ -207,14 +207,14 @@ export default function GameBrowser({
               <div>
                 <Label htmlFor="conference" className="text-sm">Conference</Label>
                 <Select
-                  value={filters.conference || ''}
+                  value={filters.conference || 'all'}
                   onValueChange={(value) => setFilters(prev => ({ ...prev, conference: value || undefined }))}
                 >
                   <SelectTrigger className="mt-1">
                     <SelectValue placeholder="All Conferences" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">All Conferences</SelectItem>
+                    <SelectItem value="all">All Conferences</SelectItem>
                     {['SEC', 'Big Ten', 'Big 12', 'Pac-12', 'ACC', 'American', 'Mountain West', 'MAC', 'Sun Belt', 'Conference USA'].map((conf) => (
                       <SelectItem key={conf} value={conf}>
                         {conf}

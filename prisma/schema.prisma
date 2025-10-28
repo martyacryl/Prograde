@@ -108,6 +108,12 @@ model Team {
   secondaryColor    String?  // Secondary team color (hex)
   accentColor       String?  // Accent color (hex)
   colors            Json?    // Extended color palette
+  
+  // Setup tracking
+  setupCompleted    Boolean  @default(false)
+  setupCompletedAt  DateTime?
+  setupStep         String?  // Current setup step
+  
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 
@@ -161,6 +167,8 @@ model Game {
   score       Json?    // {team: 24, opponent: 17, quarter: 4}
   weather     Json?    // Temperature, wind, conditions
   attendance  Int?
+  venue       String?  // Stadium/venue name
+  status      String?  // Game status (final, live, etc.)
   
   season      Season   @relation(fields: [seasonId], references: [id])
   team        Team     @relation(fields: [teamId], references: [id])
@@ -191,7 +199,11 @@ model Play {
   time            String
   down            Int
   distance        Int
+  yardLine        Int?     // Field position (yard line)
   playType        PlayType
+  description     String?  // Play description
+  offense         String?  // Offensive team
+  defense         String?  // Defensive team
   formation       String?
   personnel       String?
   playAction      String?
@@ -201,6 +213,8 @@ model Play {
   isThirdDown     Boolean  @default(false)
   isFourthDown    Boolean  @default(false)
   playersInvolved Json?
+  externalPlayId  String?  // External API play ID
+  externalSource  String?  // Source of external data
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
@@ -357,7 +371,7 @@ model TendencyAnalysis {
 
 // Position-specific analysis models
 model PositionGroup {
-  id          String @id @default(cuid())
+  id          String @id
   name        String @unique
   displayName String
   category    String

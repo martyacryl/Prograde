@@ -60,7 +60,7 @@ export default function RosterManagementPage() {
   const [players, setPlayers] = useState<Player[]>([]);
   const [seasons, setSeasons] = useState<Season[]>([]);
   const [selectedSeason, setSelectedSeason] = useState<string>('');
-  const [selectedPosition, setSelectedPosition] = useState<string>('');
+  const [selectedPosition, setSelectedPosition] = useState<string>('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [showAnalytics, setShowAnalytics] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -113,7 +113,7 @@ export default function RosterManagementPage() {
         isActive: 'true'
       });
 
-      if (selectedPosition) {
+      if (selectedPosition && selectedPosition !== 'all') {
         params.append('position', selectedPosition);
       }
 
@@ -262,7 +262,7 @@ export default function RosterManagementPage() {
                     <SelectValue placeholder="All positions" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">All Positions</SelectItem>
+                    <SelectItem value="all">All Positions</SelectItem>
                     {positions.map((position) => (
                       <SelectItem key={position} value={position}>
                         {position}

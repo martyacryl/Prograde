@@ -28,8 +28,8 @@ const navigation = [
     current: true
   },
   {
-    name: 'Live Grading',
-    href: '/dashboard/live',
+    name: 'Live Games',
+    href: '/live-game',
     icon: Play,
     current: false
   },
@@ -59,8 +59,14 @@ const navigation = [
   },
   {
     name: 'Games',
-    href: '/dashboard/games',
+    href: '/games',
     icon: Calendar,
+    current: false
+  },
+  {
+    name: 'Position Modules',
+    href: '/position-modules',
+    icon: Target,
     current: false
   },
   {
@@ -77,7 +83,7 @@ const navigation = [
   },
   {
     name: 'Data Import',
-    href: '/dashboard/import',
+    href: '/dashboard/data-import',
     icon: Database,
     current: false
   },

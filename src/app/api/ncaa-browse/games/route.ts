@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { searchGames, getTeamSchedule, fetchRecentGames, fetchGamePlayByPlay } from '@/lib/data-sources/ncaa-api';
 
 interface NCAAGame {
   gameID: string;
@@ -211,13 +212,106 @@ export async function GET(request: NextRequest) {
     const conference = searchParams.get('conference');
     const rankedOnly = searchParams.get('rankedOnly') === 'true';
     const minPlays = searchParams.get('minPlays') ? parseInt(searchParams.get('minPlays')!) : 0;
+    const useRealAPI = searchParams.get('useRealAPI') === 'true';
 
-    // In production, this would call the actual NCAA API
-    // const response = await fetch(`http://localhost:3000/scoreboard/football/fbs/${season}/${week}/all-conf`);
-    // const gamesData = await response.json();
+    let games: GameInfo[] = [];
 
-    // For now, use mock data and filter it
-    let filteredGames = MOCK_GAMES.filter(game => {
+    if (useRealAPI && team) {
+      // Fetch real games from NCAA API for specific team
+      try {
+        console.log(`Fetching real games for team: ${team}, season: ${season}`);
+        const realGames = await getTeamSchedule(team, season);
+        
+        games = realGames.map(game => ({
+          gameId: game.id,
+          homeTeam: game.home_team,
+          awayTeam: game.away_team,
+          score: `${game.home_score}-${game.away_score}`,
+          date: game.date,
+          description: `${game.home_team} vs ${game.away_team}`,
+          playCount: 0, // Will be fetched when importing
+          hasPlayByPlay: true,
+          conference: 'Unknown', // NCAA API doesn't provide conference info
+          week: game.week,
+          season: game.season,
+          venue: game.venue,
+          homeRanking: undefined,
+          awayRanking: undefined
+        }));
+        
+        console.log(`Found ${games.length} real games for ${team}`);
+      } catch (error) {
+        console.error('Error fetching real games:', error);
+        // Fall back to mock data if real API fails
+        games = MOCK_GAMES;
+      }
+    } else if (useRealAPI && week) {
+      // Fetch real games from NCAA API for specific week
+      try {
+        console.log(`Fetching real games for season: ${season}, week: ${week}`);
+        const scoreboard = await fetchRecentGames(season, week);
+        
+        games = scoreboard.games.map(game => ({
+          gameId: game.id,
+          homeTeam: game.home_team,
+          awayTeam: game.away_team,
+          score: `${game.home_score}-${game.away_score}`,
+          date: game.date,
+          description: `${game.home_team} vs ${game.away_team}`,
+          playCount: 0, // Will be fetched when importing
+          hasPlayByPlay: true,
+          conference: 'Unknown',
+          week: game.week,
+          season: game.season,
+          venue: game.venue,
+          homeRanking: undefined,
+          awayRanking: undefined
+        }));
+        
+        console.log(`Found ${games.length} real games for week ${week}`);
+      } catch (error) {
+        console.error('Error fetching real games:', error);
+        // Fall back to mock data if real API fails
+        games = MOCK_GAMES;
+      }
+    } else if (useRealAPI) {
+      // Fetch real games from NCAA API for the entire season
+      try {
+        console.log(`Fetching real games for season: ${season}`);
+        const scoreboard = await fetchRecentGames(season, '1'); // Get all games for the season
+        
+        console.log(`ESPN API returned ${scoreboard.games.length} games`);
+        
+        games = scoreboard.games.map(game => ({
+          gameId: game.id,
+          homeTeam: game.home_team,
+          awayTeam: game.away_team,
+          score: `${game.home_score}-${game.away_score}`,
+          date: game.date,
+          description: `${game.home_team} vs ${game.away_team}`,
+          playCount: 0, // Will be fetched when importing
+          hasPlayByPlay: true,
+          conference: 'Unknown',
+          week: game.week,
+          season: game.season,
+          venue: game.venue,
+          homeRanking: undefined,
+          awayRanking: undefined
+        }));
+        
+        console.log(`Mapped ${games.length} games for season ${season}`);
+      } catch (error) {
+        console.error('Error fetching real games:', error);
+        // Fall back to mock data if real API fails
+        games = MOCK_GAMES;
+      }
+    } else {
+      // Use mock data for general browsing
+      games = MOCK_GAMES;
+    }
+
+    // Apply filters
+    let filteredGames = games.filter(game => {
       // Filter by season
       if (game.season !== parseInt(season)) return false;
       
@@ -264,8 +358,10 @@ export async function GET(request: NextRequest) {
         week,
         conference,
         rankedOnly,
-        minPlays
-      }
+        minPlays,
+        useRealAPI
+      },
+      source: useRealAPI ? 'ncaa_api' : 'mock_data'
     });
 
   } catch (error) {
@@ -283,7 +379,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { gameIds, importType = 'full' } = body;
+    const { gameIds, importType = 'full', teamId } = body;
 
     if (!gameIds || !Array.isArray(gameIds)) {
       return NextResponse.json(
@@ -292,14 +388,76 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // In production, this would trigger the actual import process
-    // For now, return a success response
+    if (!teamId) {
+      return NextResponse.json(
+        { error: 'Team ID is required for import' },
+        { status: 400 }
+      );
+    }
+
+    // Import each game using the NCAA API
+    const importResults = [];
+    
+    for (const gameId of gameIds) {
+      try {
+        console.log(`Importing game ${gameId}...`);
+        
+        // Fetch game data directly from NCAA API functions
+        const playByPlayData = await fetchGamePlayByPlay(gameId);
+        
+        // Import the game to database
+        const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
+        const importResponse = await fetch(`${baseUrl}/api/games/import`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            externalGameId: gameId,
+            homeTeam: playByPlayData.game.home_team,
+            awayTeam: playByPlayData.game.away_team,
+            date: playByPlayData.game.date,
+            plays: playByPlayData.plays,
+            source: 'ncaa_api',
+            teamId: teamId
+          })
+        });
+        
+        const importResult = await importResponse.json();
+        
+        importResults.push({
+          gameId,
+          status: importResult.success ? 'success' : 'error',
+          message: importResult.success ? `Imported ${playByPlayData.plays.length} plays` : importResult.error,
+          playCount: playByPlayData.plays.length
+        });
+        
+        console.log(`Game ${gameId} imported successfully`);
+        
+      } catch (error) {
+        console.error(`Error importing game ${gameId}:`, error);
+        importResults.push({
+          gameId,
+          status: 'error',
+          message: error instanceof Error ? error.message : 'Unknown error',
+          playCount: 0
+        });
+      }
+    }
+
+    const successCount = importResults.filter(r => r.status === 'success').length;
+    const errorCount = importResults.filter(r => r.status === 'error').length;
+
     return NextResponse.json({
       success: true,
-      message: `Import initiated for ${gameIds.length} games`,
+      message: `Import completed: ${successCount} successful, ${errorCount} failed`,
       importType,
       gameIds,
-      estimatedTime: `${Math.ceil(gameIds.length * 2)}-${Math.ceil(gameIds.length * 3)} minutes`
+      results: importResults,
+      summary: {
+        total: gameIds.length,
+        successful: successCount,
+        failed: errorCount,
+        totalPlays: importResults.reduce((sum, r) => sum + r.playCount, 0)
+      }
     });
 
   } catch (error) {

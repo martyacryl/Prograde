@@ -32,7 +32,7 @@ const navigationItems = [
     name: 'Games', 
     href: '/games', 
     icon: PlayIcon,
-    description: 'View and grade games'
+    description: 'View games by season'
   },
   { 
     name: 'Position Modules', 

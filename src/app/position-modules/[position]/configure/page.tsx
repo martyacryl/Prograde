@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -21,6 +21,7 @@ interface EditingField extends GradingField {
 
 export default function PositionConfigurationPage() {
   const params = useParams();
+  const router = useRouter();
   const positionName = params.position as string;
   const { user } = useAuthStore();
   
@@ -212,7 +213,10 @@ export default function PositionConfigurationPage() {
 
       if (data.success) {
         setSaveStatus('success');
-        setTimeout(() => setSaveStatus('idle'), 3000);
+        // Redirect back to position modules page after a short delay
+        setTimeout(() => {
+          router.push('/position-modules');
+        }, 1500);
       } else {
         throw new Error(data.error || 'Failed to save configuration');
       }
@@ -255,6 +259,13 @@ export default function PositionConfigurationPage() {
             </div>
           </div>
           <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              onClick={() => router.push('/position-modules')}
+              disabled={isSaving}
+            >
+              Back to Modules
+            </Button>
             <Button
               variant="outline"
               onClick={useDefaultConfiguration}

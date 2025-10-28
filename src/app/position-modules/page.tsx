@@ -47,12 +47,12 @@ export default function PositionModulesPage() {
                   </Button>
                 </Link>
 
-                <Link href={`/position-modules/${selectedModuleData.name}/grade`}>
+                <Link href={`/position-modules/${selectedModuleData.name}/select-game`}>
                   <Button className="w-full h-16 flex items-center gap-3">
                     <Play className="h-5 w-5" />
                     <div className="text-left">
                       <div className="font-semibold">Start Grading</div>
-                      <div className="text-sm opacity-90">Grade plays</div>
+                      <div className="text-sm opacity-90">Select game to grade</div>
                     </div>
                     <ArrowRight className="h-4 w-4 ml-auto" />
                   </Button>

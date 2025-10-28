@@ -172,8 +172,8 @@ export default function TeamSelector({
         const matchesQuery = team.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                            team.fullName.toLowerCase().includes(searchQuery.toLowerCase());
         
-        const matchesFilters = (!filters.conference || team.conference === filters.conference) &&
-                             (!filters.division || team.division === filters.division) &&
+        const matchesFilters = (!filters.conference || filters.conference === 'all' || team.conference === filters.conference) &&
+                             (!filters.division || filters.division === 'all' || team.division === filters.division) &&
                              (!filters.rankedOnly || team.ranking) &&
                              (!filters.hasRecentGames || (team.recentGames && team.recentGames.length > 0));
         
@@ -278,14 +278,14 @@ export default function TeamSelector({
               <div>
                 <Label htmlFor="conference-filter" className="text-sm">Conference</Label>
                 <Select
-                  value={filters.conference || ''}
+                  value={filters.conference || 'all'}
                   onValueChange={(value) => setFilters(prev => ({ ...prev, conference: value || undefined }))}
                 >
                   <SelectTrigger className="mt-1">
                     <SelectValue placeholder="All Conferences" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">All Conferences</SelectItem>
+                    <SelectItem value="all">All Conferences</SelectItem>
                     {CONFERENCES.map((conf) => (
                       <SelectItem key={conf} value={conf}>
                         {conf}
@@ -298,14 +298,14 @@ export default function TeamSelector({
               <div>
                 <Label htmlFor="division-filter" className="text-sm">Division</Label>
                 <Select
-                  value={filters.division || ''}
+                  value={filters.division || 'all'}
                   onValueChange={(value) => setFilters(prev => ({ ...prev, division: value || undefined }))}
                 >
                   <SelectTrigger className="mt-1">
                     <SelectValue placeholder="All Divisions" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">All Divisions</SelectItem>
+                    <SelectItem value="all">All Divisions</SelectItem>
                     {DIVISIONS.map((div) => (
                       <SelectItem key={div} value={div}>
                         {div}

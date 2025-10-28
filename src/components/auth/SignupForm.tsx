@@ -49,7 +49,7 @@ export function SignupForm() {
           name: formData.teamName,
           abbreviation: formData.teamAbbreviation,
           level: formData.teamLevel,
-          conference: formData.teamConference
+          conference: formData.teamConference || undefined
         }
       )
       if (success) {

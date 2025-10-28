@@ -18,13 +18,12 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    const config = await prisma.positionConfiguration.findFirst({
+    const config = await prisma.positionConfiguration.findUnique({
       where: {
-        positionGroupId,
-        teamId
-      },
-      include: {
-        positionGroup: true
+        positionGroupId_teamId: {
+          positionGroupId,
+          teamId
+        }
       }
     })
 
@@ -47,56 +46,55 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const { positionGroupId, teamId, userId, gradingFields, metricFields, tags, settings } = body
 
-    if (!positionGroupId || !teamId || !userId) {
+    if (!positionGroupId || !teamId) {
       return NextResponse.json(
-        { success: false, error: 'Position group ID, team ID, and user ID are required' },
+        { success: false, error: 'Position group ID and team ID are required' },
         { status: 400 }
       )
     }
 
-    // Check if configuration already exists
-    const existingConfig = await prisma.positionConfiguration.findFirst({
+    // If no userId provided, try to find a user from the team
+    let actualUserId = userId;
+    if (!actualUserId) {
+      const teamUser = await prisma.user.findFirst({
+        where: { teamId },
+        select: { id: true }
+      });
+      if (!teamUser) {
+        return NextResponse.json(
+          { success: false, error: 'No user found for this team' },
+          { status: 400 }
+        );
+      }
+      actualUserId = teamUser.id;
+    }
+
+    // Use upsert to handle both create and update cases
+    const config = await prisma.positionConfiguration.upsert({
       where: {
+        positionGroupId_teamId: {
+          positionGroupId,
+          teamId
+        }
+      },
+      update: {
+        gradingFields,
+        metricFields: metricFields || {},
+        tags: tags || [],
+        settings,
+        userId: actualUserId, // Update userId if config is adopted by another user
+        updatedAt: new Date()
+      },
+      create: {
         positionGroupId,
-        teamId
+        teamId,
+        userId: actualUserId,
+        gradingFields,
+        metricFields: metricFields || {},
+        tags: tags || [],
+        settings
       }
     })
-
-    let config
-    if (existingConfig) {
-      // Update existing configuration
-      config = await prisma.positionConfiguration.update({
-        where: {
-          id: existingConfig.id
-        },
-        data: {
-          gradingFields,
-          metricFields,
-          tags,
-          settings,
-          updatedAt: new Date()
-        },
-        include: {
-          positionGroup: true
-        }
-      })
-    } else {
-      // Create new configuration
-      config = await prisma.positionConfiguration.create({
-        data: {
-          positionGroupId,
-          teamId,
-          userId,
-          gradingFields,
-          metricFields,
-          tags,
-          settings
-        },
-        include: {
-          positionGroup: true
-        }
-      })
-    }
 
     return NextResponse.json({
       success: true,
@@ -104,8 +102,17 @@ export async function POST(request: NextRequest) {
     })
   } catch (error) {
     console.error('Error saving position config:', error)
+    console.error('Error details:', {
+      message: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined,
+      name: error instanceof Error ? error.name : undefined
+    })
     return NextResponse.json(
-      { success: false, error: 'Failed to save configuration' },
+      { 
+        success: false, 
+        error: 'Failed to save configuration',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      },
       { status: 500 }
     )
   }

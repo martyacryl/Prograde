@@ -79,10 +79,28 @@ export async function POST(request: NextRequest) {
       
       // Create team if teamData is provided
       if (teamData) {
+        // Generate unique abbreviation if one already exists
+        let abbreviation = sanitizeInput(teamData.abbreviation.toUpperCase())
+        let counter = 1
+        let finalAbbreviation = abbreviation
+        
+        while (true) {
+          const existingTeam = await tx.team.findUnique({
+            where: { abbreviation: finalAbbreviation }
+          })
+          
+          if (!existingTeam) {
+            break
+          }
+          
+          finalAbbreviation = `${abbreviation}${counter}`
+          counter++
+        }
+        
         const team = await tx.team.create({
           data: {
             name: sanitizeInput(teamData.name),
-            abbreviation: sanitizeInput(teamData.abbreviation.toUpperCase()),
+            abbreviation: finalAbbreviation,
             level: teamData.level as any,
             conference: teamData.conference ? sanitizeInput(teamData.conference) : null
           }
@@ -103,8 +121,33 @@ export async function POST(request: NextRequest) {
         include: { team: true }
       })
       
-      return user
-    })
+          return user
+        })
+
+        // Initialize team setup with default position configurations
+        if (teamId) {
+          try {
+            const setupResponse = await fetch(`${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/team-setup/initialize`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                teamId: teamId,
+                teamLevel: teamData.level
+              }),
+            });
+
+            if (!setupResponse.ok) {
+              console.warn('Failed to initialize team setup:', await setupResponse.text());
+            } else {
+              console.log('Team setup initialized successfully');
+            }
+          } catch (setupError) {
+            console.warn('Error initializing team setup:', setupError);
+            // Don't fail signup if setup initialization fails
+          }
+        }
     
     // Generate JWT token
     const token = generateToken({
@@ -128,8 +171,17 @@ export async function POST(request: NextRequest) {
     })
   } catch (error) {
     console.error('Signup error:', error)
+    console.error('Error details:', {
+      message: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined,
+      name: error instanceof Error ? error.name : undefined
+    })
     return NextResponse.json(
-      { success: false, error: 'Failed to create account. Please try again.' },
+      { 
+        success: false, 
+        error: 'Failed to create account. Please try again.',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      },
       { status: 500 }
     )
   }

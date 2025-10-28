@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { useAuthStore } from '@/stores/authStore';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -64,6 +65,7 @@ const TEST_GAMES: TestGame[] = [
 
 export default function DataImportWizard() {
   const router = useRouter();
+  const { user } = useAuthStore();
   const [activeTab, setActiveTab] = useState('quick-import');
   const [loading, setLoading] = useState(false);
   const [importResults, setImportResults] = useState<ImportResult[]>([]);
@@ -74,10 +76,21 @@ export default function DataImportWizard() {
   const [selectedTeams, setSelectedTeams] = useState<string[]>([]);
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [searchLoading, setSearchLoading] = useState(false);
+  const [searchFilters, setSearchFilters] = useState({
+    teamName: '',
+    season: '2025',
+    week: '',
+    conference: '',
+    rankedOnly: false,
+    minPlays: 50,
+    useRealAPI: true
+  });
 
-  // Check NCAA API status
+  // Check NCAA API status and load initial games
   useEffect(() => {
     checkNcaaApiStatus();
+    // Load some initial games when component mounts
+    handleSearchGames();
   }, []);
 
   const handleImportComplete = async (importedGames: any[]) => {
@@ -199,16 +212,17 @@ export default function DataImportWizard() {
     }
   };
 
-  const handleSearchGames = async (filters: any) => {
+  const handleSearchGames = async () => {
     setSearchLoading(true);
     try {
       const queryParams = new URLSearchParams();
-      if (filters.teamName) queryParams.append('team', filters.teamName);
-      if (filters.season) queryParams.append('season', filters.season);
-      if (filters.week) queryParams.append('week', filters.week);
-      if (filters.conference) queryParams.append('conference', filters.conference);
-      if (filters.rankedOnly) queryParams.append('rankedOnly', 'true');
-      if (filters.minPlays) queryParams.append('minPlays', filters.minPlays.toString());
+      if (searchFilters.teamName) queryParams.append('team', searchFilters.teamName);
+      if (searchFilters.season) queryParams.append('season', searchFilters.season);
+      if (searchFilters.week) queryParams.append('week', searchFilters.week);
+      if (searchFilters.conference) queryParams.append('conference', searchFilters.conference);
+      if (searchFilters.rankedOnly) queryParams.append('rankedOnly', 'true');
+      if (searchFilters.minPlays) queryParams.append('minPlays', searchFilters.minPlays.toString());
+      if (searchFilters.useRealAPI) queryParams.append('useRealAPI', 'true');
 
       const response = await fetch(`/api/ncaa-browse/games?${queryParams}`);
       if (response.ok) {
@@ -223,42 +237,48 @@ export default function DataImportWizard() {
   };
 
   const handleImportSelectedGames = async () => {
-    if (selectedGames.length === 0) return;
+    if (selectedGames.length === 0 || !user?.teamId) return;
 
     setLoading(true);
     setImportProgress(0);
     setImportResults([]);
 
     try {
-      for (let i = 0; i < selectedGames.length; i++) {
-        const gameId = selectedGames[i];
-        
-        setImportResults(prev => [...prev, {
-          gameId,
-          status: 'pending',
-          message: 'Importing...',
-          playCount: 0,
-          importTime: 0
-        }]);
+      // Import games using the NCAA browse API
+      const response = await fetch('/api/ncaa-browse/games', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          gameIds: selectedGames,
+          importType: 'full',
+          teamId: user.teamId
+        })
+      });
 
-        await new Promise(resolve => setTimeout(resolve, 1500));
+      if (!response.ok) {
+        throw new Error('Failed to import games');
+      }
+
+      const result = await response.json();
+      
+      if (result.success) {
+        setImportResults(result.results || []);
+        setImportProgress(100);
         
-        setImportProgress(((i + 1) / selectedGames.length) * 100);
-        
-        setImportResults(prev => prev.map(result => 
-          result.gameId === gameId 
-            ? {
-                ...result,
-                status: 'success',
-                message: 'Successfully imported',
-                playCount: Math.floor(Math.random() * 50) + 100,
-                importTime: Math.floor(Math.random() * 60) + 120
-              }
-            : result
-        ));
+        // Clear selected games after successful import
+        setSelectedGames([]);
+      } else {
+        throw new Error(result.error || 'Import failed');
       }
     } catch (error) {
-      console.error('Import failed:', error);
+      console.error('Import error:', error);
+      setImportResults([{
+        gameId: 'error',
+        status: 'error',
+        message: error instanceof Error ? error.message : 'Import failed',
+        playCount: 0,
+        importTime: 0
+      }]);
     } finally {
       setLoading(false);
     }
@@ -358,32 +378,50 @@ export default function DataImportWizard() {
               <CardTitle>Search Filters</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div>
                   <label className="text-sm font-medium">Team Name</label>
                   <input
                     type="text"
                     placeholder="e.g., Michigan, Alabama"
                     className="w-full mt-1 px-3 py-2 border rounded-md"
-                    onChange={(e) => handleSearchGames({ teamName: e.target.value })}
+                    value={searchFilters.teamName}
+                    onChange={(e) => setSearchFilters(prev => ({ ...prev, teamName: e.target.value }))}
                   />
                 </div>
                 <div>
                   <label className="text-sm font-medium">Season</label>
                   <select 
                     className="w-full mt-1 px-3 py-2 border rounded-md"
-                    onChange={(e) => handleSearchGames({ season: e.target.value })}
+                    value={searchFilters.season}
+                    onChange={(e) => setSearchFilters(prev => ({ ...prev, season: e.target.value }))}
                   >
+                    <option value="2025">2025</option>
+                    <option value="2024">2024</option>
                     <option value="2023">2023</option>
                     <option value="2022">2022</option>
                     <option value="2021">2021</option>
                   </select>
                 </div>
                 <div>
+                  <label className="text-sm font-medium">Week</label>
+                  <select 
+                    className="w-full mt-1 px-3 py-2 border rounded-md"
+                    value={searchFilters.week}
+                    onChange={(e) => setSearchFilters(prev => ({ ...prev, week: e.target.value }))}
+                  >
+                    <option value="">All Weeks</option>
+                    {Array.from({ length: 17 }, (_, i) => i + 1).map(week => (
+                      <option key={week} value={week.toString()}>Week {week}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
                   <label className="text-sm font-medium">Conference</label>
                   <select 
                     className="w-full mt-1 px-3 py-2 border rounded-md"
-                    onChange={(e) => handleSearchGames({ conference: e.target.value })}
+                    value={searchFilters.conference}
+                    onChange={(e) => setSearchFilters(prev => ({ ...prev, conference: e.target.value }))}
                   >
                     <option value="">All Conferences</option>
                     <option value="SEC">SEC</option>
@@ -393,6 +431,37 @@ export default function DataImportWizard() {
                     <option value="ACC">ACC</option>
                   </select>
                 </div>
+              </div>
+              
+              {/* Real API Toggle */}
+              <div className="mt-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h4 className="font-semibold text-blue-900">NCAA API Integration</h4>
+                    <p className="text-sm text-blue-700">Toggle to fetch real games from NCAA API instead of mock data</p>
+                  </div>
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={searchFilters.useRealAPI}
+                      onChange={(e) => setSearchFilters(prev => ({ ...prev, useRealAPI: e.target.checked }))}
+                      className="rounded"
+                    />
+                    <span className="text-sm font-medium">Use Real NCAA API</span>
+                  </label>
+                </div>
+                {searchFilters.useRealAPI && (
+                  <div className="mt-2 text-xs text-blue-600">
+                    ⚠️ Real API requires team name or week to be specified for best results
+                  </div>
+                )}
+              </div>
+              
+              <div className="mt-4 flex justify-center">
+                <Button onClick={handleSearchGames} disabled={searchLoading}>
+                  <Search className="h-4 w-4 mr-2" />
+                  {searchLoading ? 'Searching...' : 'Search Games'}
+                </Button>
               </div>
             </CardContent>
           </Card>

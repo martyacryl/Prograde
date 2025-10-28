@@ -61,11 +61,12 @@ async function main() {
     },
   })
 
-  // Create position groups
+  // Create position groups (using IDs that match the position registry)
   const offensiveLine = await prisma.positionGroup.upsert({
-    where: { name: 'offensive-line' },
+    where: { id: 'OFFENSIVE_LINE' },
     update: {},
     create: {
+      id: 'OFFENSIVE_LINE',
       name: 'offensive-line',
       displayName: 'Offensive Line',
       category: 'OFFENSE',
@@ -75,9 +76,10 @@ async function main() {
   })
 
   const quarterback = await prisma.positionGroup.upsert({
-    where: { name: 'quarterback' },
+    where: { id: 'QUARTERBACK' },
     update: {},
     create: {
+      id: 'QUARTERBACK',
       name: 'quarterback',
       displayName: 'Quarterback',
       category: 'OFFENSE',
@@ -87,9 +89,10 @@ async function main() {
   })
 
   const runningBack = await prisma.positionGroup.upsert({
-    where: { name: 'running-back' },
+    where: { id: 'RUNNING_BACK' },
     update: {},
     create: {
+      id: 'RUNNING_BACK',
       name: 'running-back',
       displayName: 'Running Back',
       category: 'OFFENSE',
@@ -99,21 +102,36 @@ async function main() {
   })
 
   const wideReceivers = await prisma.positionGroup.upsert({
-    where: { name: 'wide-receivers' },
+    where: { id: 'WIDE_RECEIVER' },
     update: {},
     create: {
-      name: 'wide-receivers',
-      displayName: 'Wide Receivers',
+      id: 'WIDE_RECEIVER',
+      name: 'wide-receiver',
+      displayName: 'Wide Receiver',
       category: 'OFFENSE',
-      positions: ['WR1', 'WR2', 'WR3', 'WR4'],
+      positions: ['WR', 'SL'],
+      isActive: true,
+    },
+  })
+
+  const tightEnd = await prisma.positionGroup.upsert({
+    where: { id: 'TIGHT_END' },
+    update: {},
+    create: {
+      id: 'TIGHT_END',
+      name: 'tight-end',
+      displayName: 'Tight End',
+      category: 'OFFENSE',
+      positions: ['TE'],
       isActive: true,
     },
   })
 
   const defensiveLine = await prisma.positionGroup.upsert({
-    where: { name: 'defensive-line' },
+    where: { id: 'DEFENSIVE_LINE' },
     update: {},
     create: {
+      id: 'DEFENSIVE_LINE',
       name: 'defensive-line',
       displayName: 'Defensive Line',
       category: 'DEFENSE',
@@ -123,37 +141,40 @@ async function main() {
   })
 
   const linebackers = await prisma.positionGroup.upsert({
-    where: { name: 'linebackers' },
+    where: { id: 'LINEBACKER' },
     update: {},
     create: {
-      name: 'linebackers',
-      displayName: 'Linebackers',
+      id: 'LINEBACKER',
+      name: 'linebacker',
+      displayName: 'Linebacker',
       category: 'DEFENSE',
-      positions: ['OLB', 'ILB', 'MLB'],
+      positions: ['LB', 'MLB', 'OLB'],
       isActive: true,
     },
   })
 
-  const defensiveBacks = await prisma.positionGroup.upsert({
-    where: { name: 'defensive-backs' },
+  const cornerback = await prisma.positionGroup.upsert({
+    where: { id: 'CORNERBACK' },
     update: {},
     create: {
-      name: 'defensive-backs',
-      displayName: 'Defensive Backs',
+      id: 'CORNERBACK',
+      name: 'cornerback',
+      displayName: 'Cornerback',
       category: 'DEFENSE',
-      positions: ['CB1', 'CB2', 'CB3', 'S1', 'S2', 'NB'],
+      positions: ['CB', 'NB'],
       isActive: true,
     },
   })
 
-  const specialTeams = await prisma.positionGroup.upsert({
-    where: { name: 'special-teams' },
+  const safety = await prisma.positionGroup.upsert({
+    where: { id: 'SAFETY' },
     update: {},
     create: {
-      name: 'special-teams',
-      displayName: 'Special Teams',
-      category: 'SPECIAL_TEAMS',
-      positions: ['K', 'P', 'LS', 'KR', 'PR'],
+      id: 'SAFETY',
+      name: 'safety',
+      displayName: 'Safety',
+      category: 'DEFENSE',
+      positions: ['FS', 'SS'],
       isActive: true,
     },
   })
@@ -379,10 +400,11 @@ async function main() {
   console.log(`   - ${quarterback.displayName} position group created`)
   console.log(`   - ${runningBack.displayName} position group created`)
   console.log(`   - ${wideReceivers.displayName} position group created`)
+  console.log(`   - ${tightEnd.displayName} position group created`)
   console.log(`   - ${defensiveLine.displayName} position group created`)
   console.log(`   - ${linebackers.displayName} position group created`)
-  console.log(`   - ${defensiveBacks.displayName} position group created`)
-  console.log(`   - ${specialTeams.displayName} position group created`)
+  console.log(`   - ${cornerback.displayName} position group created`)
+  console.log(`   - ${safety.displayName} position group created`)
   console.log(`   - ${game1.id} game created`)
   console.log(`   - ${game2.id} game created`)
   console.log(`   - ${play1.id} play created`)
