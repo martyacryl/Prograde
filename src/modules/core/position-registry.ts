@@ -50,7 +50,6 @@ export const POSITION_MODULES: Record<string, PositionModuleDefinition> = {
     displayName: 'Offensive Line',
     category: 'OFFENSE',
     positions: ['LT', 'LG', 'C', 'RG', 'RT'], // Core 5 positions
-    additionalPositions: ['TE6', 'OL6', 'FB'], // Available for trick plays
     icon: Shield,
     description: 'Individual lineman grading: LT, LG, C, RG, RT',
     defaultConfig: {
@@ -137,8 +136,7 @@ export const POSITION_MODULES: Record<string, PositionModuleDefinition> = {
         showPlayerNumbers: true,
         allowMultiplePositions: true, // Allow adding 6th OL, etc.
         defaultView: 'grid',
-        quickGradeEnabled: true,
-        gradingMode: 'individual' // New setting for individual position grading
+        quickGradeEnabled: true
       }
     }
   },

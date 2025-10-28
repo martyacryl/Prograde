@@ -91,11 +91,11 @@ export function validateEmail(email: string): boolean {
 }
 
 export function validatePassword(password: string): boolean {
-  return password && password.length >= 6
+  return !!password && password.length >= 6
 }
 
 export function validateDisplayName(name: string): boolean {
-  return name && name.trim().length >= 2 && name.trim().length <= 50
+  return !!name && name.trim().length >= 2 && name.trim().length <= 50
 }
 
 // Sanitize input to prevent XSS

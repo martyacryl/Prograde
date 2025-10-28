@@ -68,13 +68,11 @@ export const mockPlays: Partial<Play>[] = [
     time: '15:00',
     down: 1,
     distance: 10,
-    yardLine: 25,
     playType: 'RUSH',
     formation: 'I-Formation',
     personnel: '21 Personnel',
-    playAction: false,
+    playAction: null,
     result: { yards: 7, touchdown: false, turnover: false, firstDown: false },
-    description: 'Handoff to RB up the middle',
     isRedZone: false,
     isGoalToGo: false,
     isThirdDown: false,
@@ -87,13 +85,11 @@ export const mockPlays: Partial<Play>[] = [
     time: '14:15',
     down: 2,
     distance: 3,
-    yardLine: 32,
     playType: 'PASS',
     formation: 'Shotgun',
     personnel: '11 Personnel',
-    playAction: true,
+    playAction: 'Yes',
     result: { yards: 12, touchdown: false, turnover: false, firstDown: true },
-    description: 'Play action pass to TE for first down',
     isRedZone: false,
     isGoalToGo: false,
     isThirdDown: false,
@@ -106,13 +102,11 @@ export const mockPlays: Partial<Play>[] = [
     time: '13:30',
     down: 1,
     distance: 10,
-    yardLine: 44,
     playType: 'RUSH',
     formation: 'Pistol',
     personnel: '12 Personnel',
-    playAction: false,
+    playAction: null,
     result: { yards: 2, touchdown: false, turnover: false, firstDown: false },
-    description: 'QB keeper up the middle',
     isRedZone: false,
     isGoalToGo: false,
     isThirdDown: false,
@@ -209,8 +203,7 @@ export const mockPlayGrades: Partial<PlayGrade>[] = [
     pressure: false,
     turnover: false,
     tags: ['Good Blocking', 'Positive Yards'],
-    notes: 'Excellent blocking by the offensive line, RB hit the hole hard',
-    situational: { downTendency: 'run', redZone: false, goalToGo: false }
+    notes: 'Excellent blocking by the offensive line, RB hit the hole hard'
   },
   {
     id: 'grade-2',
@@ -227,8 +220,7 @@ export const mockPlayGrades: Partial<PlayGrade>[] = [
     pressure: false,
     turnover: false,
     tags: ['Big Play', 'First Down', 'Play Action'],
-    notes: 'Perfect execution of play action, defense bit hard on the run',
-    situational: { downTendency: 'pass', redZone: false, goalToGo: false }
+    notes: 'Perfect execution of play action, defense bit hard on the run'
   }
 ]
 

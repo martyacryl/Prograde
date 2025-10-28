@@ -77,7 +77,7 @@ export function OLGradingForm({
         doubleTeam: false,
         chipBlock: false,
         notes: '',
-        tags: selectedTags
+        tags: selectedTags || []
       }
     }
   })
@@ -215,7 +215,7 @@ export function OLGradingForm({
               
               <GradeSelector
                 label="Communication"
-                value={watchedGrading.communication}
+                value={watchedGrading.communication ?? 0}
                 onChange={(value) => handleGradeChange('communication', value)}
               />
             </div>

@@ -10,7 +10,7 @@ interface GradeSelectorProps {
   label?: string
   required?: boolean
   className?: string
-  size?: 'sm' | 'md' | 'lg'
+  size?: 'sm' | 'default' | 'lg'
 }
 
 const gradeOptions = [
@@ -23,7 +23,7 @@ const gradeOptions = [
 
 const sizeClasses = {
   sm: 'h-8 px-2 text-sm',
-  md: 'h-10 px-3 text-base',
+  default: 'h-10 px-3 text-base',
   lg: 'h-12 px-4 text-lg'
 }
 
@@ -33,7 +33,7 @@ export function GradeSelector({
   label, 
   required = false, 
   className,
-  size = 'md'
+  size = 'default'
 }: GradeSelectorProps) {
   const getGradeDescription = (grade: number): string => {
     switch (grade) {
@@ -102,11 +102,11 @@ export function GradeSelector({
 // Quick Grade Selector for rapid grading
 interface QuickGradeSelectorProps {
   onGradeSelect: (grade: number) => void
-  size?: 'sm' | 'md' | 'lg'
+  size?: 'sm' | 'default' | 'lg'
   className?: string
 }
 
-export function QuickGradeSelector({ onGradeSelect, size = 'md', className }: QuickGradeSelectorProps) {
+export function QuickGradeSelector({ onGradeSelect, size = 'default', className }: QuickGradeSelectorProps) {
   return (
     <div className={cn('flex gap-1', className)}>
       {gradeOptions.map((option) => (

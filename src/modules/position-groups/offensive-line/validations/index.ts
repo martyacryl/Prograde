@@ -23,18 +23,16 @@ export const olGradingDataSchema = z.object({
   
   // Additional fields
   notes: z.string().optional(),
-  tags: z.array(z.string()).default([])
+  tags: z.array(z.string())
 })
 
 // OL Form Data Schema
 export const olFormDataSchema = z.object({
   playId: z.string().min(1, "Play ID is required"),
   playerNumber: z.string().min(1, "Player number is required"),
-  position: z.enum(['LT', 'LG', 'C', 'RG', 'RT'], {
-    required_error: "Position is required"
-  }),
+  position: z.enum(['LT', 'LG', 'C', 'RG', 'RT']),
   grading: olGradingDataSchema,
-  timestamp: z.date().default(() => new Date()),
+  timestamp: z.date(),
   userId: z.string().min(1, "User ID is required"),
   teamId: z.string().min(1, "Team ID is required")
 })
