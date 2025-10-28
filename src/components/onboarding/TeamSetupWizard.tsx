@@ -508,7 +508,7 @@ export function TeamSetupWizard({ onComplete, onCancel }: SetupWizardProps) {
           <Button 
             onClick={() => setSelectedGroups([])}
             variant="outline"
-            className="text-muted-foreground"
+            className="text-gray-700 border-gray-300 hover:bg-gray-50"
           >
             Clear Selection
           </Button>
@@ -709,9 +709,9 @@ export function TeamSetupWizard({ onComplete, onCancel }: SetupWizardProps) {
         <div className="flex justify-between items-start">
           <Button
             onClick={onCancel || (() => router.push('/dashboard'))}
-            variant="ghost"
+            variant="outline"
             size="sm"
-            className="text-muted-foreground hover:text-foreground"
+            className="text-gray-700 border-gray-300 hover:bg-gray-50"
           >
             <HomeIcon className="w-4 h-4 mr-2" />
             Exit Setup
@@ -750,9 +750,9 @@ export function TeamSetupWizard({ onComplete, onCancel }: SetupWizardProps) {
         {onCancel && (
           <div className="text-center">
             <Button 
-              variant="ghost" 
+              variant="outline" 
               onClick={onCancel}
-              className="text-muted-foreground"
+              className="text-gray-700 border-gray-300 hover:bg-gray-50"
             >
               <HomeIcon className="w-4 h-4 mr-2" />
               Cancel & Return to Dashboard
